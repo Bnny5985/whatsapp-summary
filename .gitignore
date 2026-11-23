@@ -1,0 +1,44 @@
+node_modules/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+.env
+.env.*
+!.env.example
+logs/
+_backup_*/
+restart-log.json
+_IGNORE_*
+session/
+
+*.data.json
+bot.pid
+tailscale_serve.txt
+media/
+autostart.log
+
+# Baileys login keys (like a password) - never commit
+wa/.auth*/
+.auth*/
+wa/.data-*/
+.data-*/
+wa-auth/
+# Build output and installers
+build/
+dist/
+*.exe
+# Local data created by the app
+archive-media/
+archive.db*
+wa/.auth*
+# Personal notes and local tool settings
+APP_SPEC.md
+.claude/
+# Built-in AI engine + downloaded models (GBs) and database backups - never commit
+ai/
+backups/
+voice/
+.autostart-default
+graphify-out/
+build-log.txt

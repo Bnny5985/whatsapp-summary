@@ -1,0 +1,17 @@
+{
+  "name": "wa-readonly-source",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Read-only WhatsApp message source built on Baileys",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test test/guard.test.js test/static.test.js test/normalize.test.js test/ingest.test.js test/compat.test.js test/archive.test.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "7.0.0-rc14"
+  },
+  "type": "module"
+}

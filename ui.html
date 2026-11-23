@@ -1,0 +1,1895 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>סיכומי וואטסאפ</title>
+<link rel="manifest" href="/public/manifest.webmanifest">
+<link rel="icon" href="/public/icon-192.png">
+<link rel="apple-touch-icon" href="/public/apple-touch-icon.png">
+<meta name="theme-color" content="#06060c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="סיכומים">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&family=Heebo:wght@300;400;500;600;700&display=swap" rel="stylesheet" referrerpolicy="no-referrer">
+<style>
+/* =====================================================================
+   DESIGN v11 - "depth": dark night, glowing glass slabs floating in 3D.
+   Fonts: Rubik (headings, numbers) + Heebo (text); system font if offline.
+   3D: cards tilt toward the pointer (desktop only), light follows the pointer,
+   layered shadows; everything still when "reduce motion" is on.
+   ===================================================================== */
+:root {
+  --bg: #06060c;
+  --bg-2: #0c0b18;
+  --slab: linear-gradient(160deg, rgba(38, 36, 64, .78), rgba(16, 15, 30, .86));
+  --slab-solid: #14132a;
+  --solid-1: #121124;
+  --solid-2: #1b1a33;
+  --surface-1: rgba(255, 255, 255, .04);
+  --surface-2: rgba(255, 255, 255, .07);
+  --surface-3: rgba(255, 255, 255, .11);
+  --border: rgba(255, 255, 255, .09);
+  --border-strong: rgba(255, 255, 255, .17);
+  --edge: rgba(255, 255, 255, .22);          /* lit top edge of a slab */
+
+  --text: #f6f4ff;
+  --text-2: #b9b4d6;
+  --text-3: #7f7aa3;
+
+  --brand: #b46bff;
+  --brand-2: #ff4fb8;
+  --brand-soft: rgba(180, 107, 255, .16);
+  --brand-line: rgba(180, 107, 255, .45);
+  --love: #ff4f9a;
+  --love-2: #ff8ac0;
+  --sunset: #ff8a3d;
+  --ocean: #38bdf8;
+  --mint: #2ee6a6;
+  --danger: #ff5470;
+  --warn: #ffb547;
+
+  --grad-brand: linear-gradient(135deg, #8b5cf6, #d946ef 55%, #ff4fb8);
+  --grad-love: linear-gradient(135deg, #ff4f9a 0%, #e8318a 40%, #9b3bff 100%);
+  --grad-sunset: linear-gradient(135deg, #ffb347, #ff6a3d 60%, #ff3d7f);
+  --grad-ocean: linear-gradient(135deg, #38bdf8, #6366f1);
+  --grad-mint: linear-gradient(135deg, #2ee6a6, #14b8a6);
+
+  --font-head: "Rubik", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Heebo", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --fs-xs: 12px; --fs-sm: 13.5px; --fs-md: 15px; --fs-lg: 17px; --fs-xl: 21px; --fs-2xl: 28px; --fs-3xl: 40px;
+
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 28px; --s7: 40px;
+  --r-sm: 10px; --r-md: 14px; --r-lg: 22px; --r-xl: 30px; --r-pill: 999px;
+
+  /* layered depth shadows: contact + mid + far */
+  --depth-1: 0 1px 0 rgba(255,255,255,.06) inset, 0 2px 4px rgba(0,0,0,.35), 0 10px 24px -8px rgba(0,0,0,.55);
+  --depth-2: 0 1px 0 rgba(255,255,255,.08) inset, 0 3px 6px rgba(0,0,0,.35), 0 18px 40px -12px rgba(0,0,0,.65), 0 40px 80px -30px rgba(0,0,0,.6);
+  --t-fast: 140ms; --t-med: 260ms; --ease: cubic-bezier(.2, .8, .2, 1);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 84px; }
+body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: var(--fs-md); line-height: 1.55;
+  -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+h1, h2, h3, h4, .h-card, .h-section, .h-display, .btn, .badge, .chip, .seg button, .nav a, .tabbar a { font-family: var(--font-head); }
+a { color: var(--brand); }
+button, input, select, textarea { font: inherit; color: inherit; }
+.hidden { display: none !important; }
+.meta { color: var(--text-3); font-size: var(--fs-sm); }
+.muted { color: var(--text-2); }
+.error-text { color: var(--danger); }
+.skeleton { color: var(--text-3); font-size: var(--fs-sm); animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .45; } }
+.row { display: flex; align-items: center; gap: var(--s2); }
+.spacer { flex: 1; }
+.empty { color: var(--text-3); text-align: center; padding: var(--s5); border: 1px dashed var(--border-strong); border-radius: var(--r-md); }
+
+/* ---------- 3D background scene ---------- */
+.scene { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+  background: radial-gradient(1200px 700px at 85% -10%, rgba(139, 92, 246, .22), transparent 60%),
+              radial-gradient(900px 600px at 0% 10%, rgba(255, 79, 154, .14), transparent 60%),
+              linear-gradient(180deg, var(--bg-2), var(--bg) 70%); }
+.scene .floor { position: absolute; left: -50%; right: -50%; bottom: -35vh; height: 80vh; transform-origin: 50% 0;
+  transform: perspective(600px) rotateX(72deg);
+  background-image: linear-gradient(rgba(180, 107, 255, .32) 1px, transparent 1px), linear-gradient(90deg, rgba(180, 107, 255, .32) 1px, transparent 1px);
+  background-size: 60px 60px; mask-image: linear-gradient(to bottom, transparent, #000 35%, transparent 95%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 35%, transparent 95%); animation: floor 14s linear infinite; opacity: .45; }
+@keyframes floor { to { background-position: 0 60px, 0 0; } }
+.scene .orb3d { position: absolute; border-radius: 50%; filter: blur(2px); opacity: .55;
+  background: radial-gradient(circle at 30% 28%, rgba(255,255,255,.85), rgba(255,255,255,0) 18%), radial-gradient(circle at 50% 50%, var(--c1), var(--c2) 70%);
+  box-shadow: 0 30px 80px -10px var(--c1); animation: drift 22s ease-in-out infinite alternate; }
+.scene .o1 { --c1: #9b5cff; --c2: #3b1d7a; width: 180px; height: 180px; top: 14%; left: 6%; }
+.scene .o2 { --c1: #ff4f9a; --c2: #6b1240; width: 110px; height: 110px; top: 58%; left: 82%; animation-duration: 28s; }
+.scene .o3 { --c1: #38bdf8; --c2: #12346b; width: 70px; height: 70px; top: 76%; left: 18%; animation-duration: 18s; }
+@keyframes drift { 0% { transform: translate3d(0, 0, 0) scale(1); } 100% { transform: translate3d(40px, -60px, 0) scale(1.12); } }
+
+/* ---------- top bar ---------- */
+.topbar { position: sticky; top: 0; z-index: 35; display: flex; align-items: center; gap: var(--s3); padding: 10px max(16px, 3vw);
+  background: rgba(8, 8, 16, .72); backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  border-bottom: 1px solid var(--border); }
+.brand { display: flex; align-items: center; gap: var(--s3); font-family: var(--font-head); font-weight: 800; font-size: var(--fs-lg); }
+.brand small { display: block; font-family: var(--font-body); font-weight: 400; font-size: 11px; color: var(--text-3); }
+.brand-mark { width: 38px; height: 38px; display: grid; place-items: center; transform-style: preserve-3d; perspective: 200px; }
+.brand-mark i { width: 26px; height: 26px; border-radius: 8px; background: var(--grad-brand); box-shadow: 0 8px 20px -6px rgba(217, 70, 239, .9), inset 0 2px 0 rgba(255,255,255,.4);
+  transform: rotateX(18deg) rotateY(-24deg) rotateZ(8deg); animation: spin3d 9s ease-in-out infinite; }
+@keyframes spin3d { 50% { transform: rotateX(-14deg) rotateY(28deg) rotateZ(-6deg); } }
+.nav { display: flex; gap: 2px; padding: 4px; border-radius: var(--r-pill); background: var(--surface-1); border: 1px solid var(--border); }
+.nav a { position: relative; color: var(--text-2); text-decoration: none; font-size: var(--fs-sm); font-weight: 600; padding: 6px 12px; border-radius: var(--r-pill); transition: background var(--t-fast), color var(--t-fast); white-space: nowrap; }
+.nav a:hover { color: var(--text); background: var(--surface-2); }
+.nav a.is-love { color: var(--love-2); }
+.nav .badge { margin-inline-start: 4px; height: 17px; min-width: 17px; font-size: 10px; }
+.status { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ---------- controls ---------- */
+.btn { --b: var(--surface-2); display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; padding: 0 16px; border-radius: var(--r-pill);
+  border: 1px solid var(--border-strong); background: var(--b); color: var(--text); font-weight: 600; font-size: var(--fs-sm); cursor: pointer; text-decoration: none; white-space: nowrap;
+  box-shadow: 0 1px 0 rgba(255,255,255,.08) inset, 0 3px 0 rgba(0,0,0,.35), 0 8px 18px -10px rgba(0,0,0,.8);
+  transition: transform var(--t-fast) var(--ease), box-shadow var(--t-fast), background var(--t-fast); }
+.btn:hover { background: var(--surface-3); transform: translateY(-1px); }
+.btn:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(255,255,255,.06) inset, 0 1px 0 rgba(0,0,0,.35); }
+.btn:disabled { opacity: .55; cursor: default; transform: none; }
+.btn-primary { background: var(--grad-brand); border-color: transparent; color: #fff;
+  box-shadow: 0 1px 0 rgba(255,255,255,.35) inset, 0 3px 0 #6a1f8f, 0 12px 26px -10px rgba(217, 70, 239, .9); }
+.btn-primary:hover { background: var(--grad-brand); filter: brightness(1.1); }
+.btn-primary:active { box-shadow: 0 1px 0 rgba(255,255,255,.3) inset, 0 1px 0 #6a1f8f; }
+.btn-love { background: var(--grad-love); border-color: transparent; color: #fff; box-shadow: 0 1px 0 rgba(255,255,255,.35) inset, 0 3px 0 #7a1446, 0 12px 26px -10px rgba(255, 79, 154, .9); }
+.btn-ghost { background: transparent; border-color: transparent; box-shadow: none; color: var(--text-2); }
+.btn-ghost:hover { background: var(--surface-2); color: var(--text); }
+.btn-sm { min-height: 30px; padding: 0 11px; font-size: var(--fs-xs); }
+.btn-icon { width: 34px; min-height: 34px; padding: 0; }
+.btn.danger, .menu .danger { color: var(--danger); }
+.field, .select { min-height: 40px; padding: 0 14px; border-radius: var(--r-md); border: 1px solid var(--border-strong); background: rgba(0, 0, 0, .28); color: var(--text);
+  box-shadow: inset 0 2px 6px rgba(0,0,0,.45); outline: none; transition: border-color var(--t-fast), box-shadow var(--t-fast); }
+textarea.field { padding: 9px 14px; resize: vertical; min-height: 40px; }
+.field:focus, .select:focus { border-color: var(--brand-line); box-shadow: inset 0 2px 6px rgba(0,0,0,.45), 0 0 0 3px var(--brand-soft); }
+.select { padding-inline-end: 30px; cursor: pointer; }
+.select option { background: var(--solid-1); }
+.check { appearance: none; -webkit-appearance: none; flex: none; width: 22px; height: 22px; margin: 0; border-radius: 7px; cursor: pointer; display: grid; place-items: center;
+  border: 1.5px solid var(--border-strong); background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(0,0,0,.2));
+  box-shadow: 0 2px 0 rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.1); transition: transform var(--t-fast), background var(--t-fast); }
+.check:hover { border-color: var(--brand-line); }
+.check:active { transform: translateY(2px); box-shadow: none; }
+.check:checked { background: var(--grad-brand); border-color: transparent; }
+.check:checked::after { content: "✓"; color: #fff; font-size: 13px; font-weight: 900; }
+.love-hero .check:checked { background: var(--grad-love); }
+.badge { display: inline-grid; place-items: center; height: 22px; min-width: 22px; padding: 0 7px; border-radius: var(--r-pill); font-size: var(--fs-xs); font-weight: 700;
+  background: var(--surface-3); color: var(--text); font-variant-numeric: tabular-nums; }
+.badge-new { background: var(--grad-brand); color: #fff; box-shadow: 0 4px 12px -4px rgba(217, 70, 239, .9); }
+.chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: var(--r-pill); font-size: var(--fs-xs); font-weight: 600;
+  background: var(--surface-1); border: 1px solid var(--border); color: var(--text-2); white-space: nowrap; }
+.chip-brand { background: var(--brand-soft); border-color: var(--brand-line); color: #e7d4ff; }
+.chip-info { color: #bfe8ff; border-color: rgba(56, 189, 248, .35); }
+.chip-success { color: #b5ffe2; border-color: rgba(46, 230, 166, .4); }
+.chip-danger { color: #ffc2cc; border-color: rgba(255, 84, 112, .45); background: rgba(255, 84, 112, .1); }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-3); }
+.dot.ok { background: var(--mint); box-shadow: 0 0 8px var(--mint); }
+.dot.info { background: var(--ocean); box-shadow: 0 0 8px var(--ocean); }
+.dot.bad { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+.seg { display: flex; padding: 3px; gap: 3px; background: rgba(0,0,0,.28); border: 1px solid var(--border); border-radius: var(--r-pill); box-shadow: inset 0 2px 6px rgba(0,0,0,.4); }
+.seg button { flex: 1; border: 0; background: none; color: var(--text-2); border-radius: var(--r-pill); min-height: 30px; padding: 0 12px; font-size: var(--fs-sm); font-weight: 600; cursor: pointer; white-space: nowrap; }
+.seg button.on { background: var(--grad-brand); color: #fff; box-shadow: 0 3px 0 #6a1f8f, 0 6px 14px -4px rgba(217, 70, 239, .8); }
+
+/* ---------- layout ---------- */
+main { max-width: 1320px; margin: 0 auto; padding: var(--s6) max(16px, 3vw) 120px; }
+.block { margin-bottom: var(--s7); }
+.block-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); flex-wrap: wrap; margin-bottom: var(--s4); }
+.h-section { display: flex; align-items: center; gap: var(--s3); margin: 0; font-size: var(--fs-xl); font-weight: 800; letter-spacing: -.01em; }
+.sec-ico { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; font-size: 16px; background: var(--surface-2); border: 1px solid var(--border-strong);
+  box-shadow: 0 3px 0 rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.12); transform: perspective(200px) rotateY(-14deg); }
+.h-section.is-hot .sec-ico { background: var(--grad-brand); border-color: transparent; box-shadow: 0 3px 0 #6a1f8f, 0 8px 18px -6px rgba(217,70,239,.9); }
+.h-card { margin: 0; font-size: var(--fs-lg); font-weight: 700; }
+.h-display { margin: var(--s2) 0; font-size: var(--fs-2xl); font-weight: 800; line-height: 1.15; letter-spacing: -.02em; }
+.bento { display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--s5); align-items: start; }
+.span-4 { grid-column: span 4; } .span-5 { grid-column: span 5; } .span-6 { grid-column: span 6; } .span-7 { grid-column: span 7; } .span-8 { grid-column: span 8; } .span-12 { grid-column: span 12; }
+
+/* ---------- 3D slabs ---------- */
+.card { position: relative; border-radius: var(--r-lg); background: var(--slab); border: 1px solid var(--border); box-shadow: var(--depth-2);
+  --rx: 0deg; --ry: 0deg; --mx: 50%; --my: 0%; --lift: 0px;
+  transform: perspective(1100px) rotateX(var(--rx)) rotateY(var(--ry)) translateZ(var(--lift));
+  transition: transform 420ms var(--ease), box-shadow var(--t-med), border-color var(--t-med); }
+.card::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(180deg, var(--edge), transparent 18%) top / 100% 1px no-repeat; opacity: .9; }
+.card::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity var(--t-med);
+  background: radial-gradient(520px circle at var(--mx) var(--my), rgba(255, 255, 255, .10), transparent 45%); }
+.card.tilting { transition: transform 90ms linear, box-shadow var(--t-med); --lift: 14px; box-shadow: var(--depth-2), 0 50px 90px -40px rgba(139, 92, 246, .45); }
+.card.tilting::after { opacity: 1; }
+.card-pad { padding: var(--s5); }
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); margin-bottom: var(--s3); }
+.ttl { display: flex; align-items: center; gap: var(--s3); min-width: 0; }
+.orb { flex: none; width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; font-size: 19px; color: #fff; font-family: var(--font-head); font-weight: 800;
+  background: var(--grad-brand); transform: perspective(240px) rotateX(10deg) rotateY(-16deg);
+  box-shadow: 0 4px 0 rgba(0,0,0,.35), 0 12px 24px -8px rgba(217, 70, 239, .8), inset 0 2px 0 rgba(255,255,255,.35), inset 0 -6px 12px rgba(0,0,0,.2); }
+.orb.love { background: var(--grad-love); box-shadow: 0 4px 0 #6d1240, 0 12px 26px -8px rgba(255, 79, 154, .9), inset 0 2px 0 rgba(255,255,255,.4); }
+.orb.sunset { background: var(--grad-sunset); box-shadow: 0 4px 0 #8a2a12, 0 12px 26px -8px rgba(255, 106, 61, .85), inset 0 2px 0 rgba(255,255,255,.4); }
+.orb.ocean { background: var(--grad-ocean); box-shadow: 0 4px 0 #1e2a7a, 0 12px 26px -8px rgba(56, 189, 248, .8), inset 0 2px 0 rgba(255,255,255,.4); }
+.orb.mint { background: var(--grad-mint); box-shadow: 0 4px 0 #0c5a4c, 0 12px 26px -8px rgba(46, 230, 166, .7), inset 0 2px 0 rgba(255,255,255,.4); }
+.tone-sunset { background: linear-gradient(160deg, rgba(255, 138, 61, .20), rgba(40, 20, 34, .88) 55%); border-color: rgba(255, 138, 61, .25); }
+.tone-ocean { background: linear-gradient(160deg, rgba(56, 189, 248, .18), rgba(16, 22, 44, .9) 55%); border-color: rgba(56, 189, 248, .25); }
+.tone-violet { background: linear-gradient(160deg, rgba(139, 92, 246, .20), rgba(20, 16, 40, .9) 55%); border-color: rgba(139, 92, 246, .28); }
+.tone-love { background: linear-gradient(160deg, rgba(255, 79, 154, .22), rgba(40, 14, 40, .9) 55%); border-color: rgba(255, 79, 154, .3); }
+
+/* reveal: slabs rise up into place */
+.reveal { opacity: 0; transform: perspective(1100px) rotateX(14deg) translateY(30px); }
+.reveal.in { opacity: 1; transform: perspective(1100px) rotateX(var(--rx)) rotateY(var(--ry)) translateZ(var(--lift)); transition: opacity 600ms var(--ease), transform 700ms var(--ease); }
+
+/* =====================================================================
+   ★ TSLIL - the most important dashboard: first, full width, always shown
+   ===================================================================== */
+.love-hero { padding: var(--s6); border-radius: var(--r-xl); overflow: visible;
+  background: radial-gradient(700px 320px at 100% 0%, rgba(255, 79, 154, .32), transparent 60%),
+              radial-gradient(600px 300px at 0% 100%, rgba(155, 59, 255, .28), transparent 60%),
+              linear-gradient(160deg, rgba(52, 18, 48, .92), rgba(18, 12, 34, .94));
+  border: 1px solid rgba(255, 79, 154, .38);
+  box-shadow: var(--depth-2), 0 0 0 1px rgba(255, 79, 154, .08), 0 40px 100px -40px rgba(255, 79, 154, .55); }
+.love-hero.tilting { box-shadow: var(--depth-2), 0 60px 120px -40px rgba(255, 79, 154, .7); }
+.love-top { display: flex; align-items: center; gap: var(--s5); flex-wrap: wrap; margin-bottom: var(--s5); }
+.heart3d { position: relative; width: 78px; height: 78px; flex: none; transform-style: preserve-3d; perspective: 400px; }
+.heart3d .core { position: absolute; inset: 10px; border-radius: 50%; display: grid; place-items: center; font-size: 30px;
+  background: radial-gradient(circle at 32% 28%, #ffd0e6 0%, #ff6fb0 22%, #e8318a 55%, #7a1aa8 100%);
+  box-shadow: 0 16px 34px -8px rgba(255, 79, 154, .95), inset -6px -10px 18px rgba(60, 0, 60, .5), inset 4px 6px 10px rgba(255,255,255,.35);
+  animation: beat 2.4s ease-in-out infinite; }
+.heart3d .ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(255, 138, 192, .55); transform: rotateX(70deg); animation: ring 6s linear infinite; }
+.heart3d .ring.r2 { inset: -6px; border-color: rgba(180, 107, 255, .45); animation-duration: 9s; animation-direction: reverse; transform: rotateY(70deg); }
+@keyframes beat { 0%, 100% { transform: translateZ(10px) scale(1); } 12% { transform: translateZ(14px) scale(1.08); } 24% { transform: translateZ(10px) scale(1); } 36% { transform: translateZ(12px) scale(1.05); } }
+@keyframes ring { from { transform: rotateX(70deg) rotateZ(0); } to { transform: rotateX(70deg) rotateZ(360deg); } }
+.r2 { animation-name: ring2 !important; }
+@keyframes ring2 { from { transform: rotateY(70deg) rotateZ(0); } to { transform: rotateY(70deg) rotateZ(360deg); } }
+.love-name { min-width: 0; flex: 1; }
+.love-name h2 { margin: 0; font-size: var(--fs-3xl); font-weight: 900; letter-spacing: -.03em; line-height: 1;
+  background: linear-gradient(180deg, #fff 30%, #ffc2df); -webkit-background-clip: text; background-clip: text; color: transparent;
+  text-shadow: 0 10px 30px rgba(255, 79, 154, .35); }
+.love-name .meta { margin-top: 6px; }
+.love-state { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; border-radius: var(--r-pill); font-family: var(--font-head); font-weight: 700; font-size: var(--fs-sm);
+  background: rgba(46, 230, 166, .12); border: 1px solid rgba(46, 230, 166, .4); color: #b5ffe2; }
+.love-state.waiting { background: rgba(255, 79, 154, .18); border-color: rgba(255, 79, 154, .6); color: #ffd3e7; box-shadow: 0 0 24px -4px rgba(255, 79, 154, .7); animation: glow 2s ease-in-out infinite; }
+@keyframes glow { 50% { box-shadow: 0 0 34px 0 rgba(255, 79, 154, .9); } }
+.love-actions { display: flex; gap: var(--s2); align-items: center; }
+.love-reply { display: grid; grid-template-columns: 1fr auto; gap: var(--s4); align-items: center; margin-bottom: var(--s5); padding: var(--s4) var(--s5); border-radius: var(--r-lg);
+  background: linear-gradient(135deg, rgba(255, 79, 154, .22), rgba(155, 59, 255, .14)); border: 1px solid rgba(255, 79, 154, .45);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 14px 30px -18px rgba(255, 79, 154, .9); transform: translateZ(20px); }
+.love-reply b { font-family: var(--font-head); font-size: var(--fs-lg); }
+.love-reply .quote { margin-top: 4px; color: var(--text-2); }
+.love-reply .sugg { margin-top: 10px; padding: 10px 14px; border-radius: var(--r-md); background: rgba(0,0,0,.28); border-inline-start: 3px solid var(--love); }
+.love-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s4); transform-style: preserve-3d; }
+.love-tile { position: relative; padding: var(--s4); border-radius: var(--r-lg); background: rgba(10, 6, 20, .5); border: 1px solid rgba(255, 255, 255, .1);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 10px 26px -14px rgba(0,0,0,.9); transform: translateZ(12px); }
+.love-tile h4 { display: flex; align-items: center; gap: 8px; margin: 0 0 var(--s3); font-family: var(--font-head); font-size: var(--fs-md); font-weight: 700; }
+.love-tile h4 .badge { height: 20px; min-width: 20px; }
+.love-checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.love-checks li { transition: opacity var(--t-med), transform var(--t-med); }
+.love-list.leaving { opacity: 0; transform: translateX(-24px); transition: opacity var(--t-med), transform var(--t-med); }
+.spinning { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.love-checks li.leaving { opacity: 0; transform: translateX(-24px) rotateY(-20deg); }
+.love-checks label { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; padding: 8px 10px; border-radius: var(--r-md); background: rgba(255,255,255,.035);
+  border: 1px solid transparent; transition: background var(--t-fast), border-color var(--t-fast), transform var(--t-fast); }
+.love-checks label:hover { background: rgba(255, 79, 154, .1); border-color: rgba(255, 79, 154, .3); transform: translateX(-3px); }
+.love-checks .due { display: block; font-size: var(--fs-xs); color: var(--love-2); }
+.love-list + .love-list { margin-top: var(--s3); padding-top: var(--s3); border-top: 1px dashed var(--border); }
+.love-list .l-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; font-weight: 600; }
+.list-items { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.list-items li { padding: 4px 10px; border-radius: var(--r-pill); font-size: var(--fs-sm); background: rgba(255, 79, 154, .12); border: 1px solid rgba(255, 79, 154, .25);
+  box-shadow: 0 2px 0 rgba(0,0,0,.3); }
+.love-learned { margin-top: var(--s4); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.love-learned .chip { height: auto; min-height: 26px; padding: 4px 10px; white-space: normal; }
+.love-warn { margin-top: var(--s3); font-size: var(--fs-sm); color: var(--warn); }
+.love-empty { color: var(--text-3); font-size: var(--fs-sm); padding: 6px 2px; }
+
+/* ---------- tasks ---------- */
+.task-add { display: grid; grid-template-columns: 1fr 210px auto; gap: var(--s2); margin-bottom: var(--s3); }
+.task-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.task { display: grid; grid-template-columns: auto 1fr auto auto; gap: var(--s3); align-items: center; padding: 10px 12px; border-radius: var(--r-md);
+  background: rgba(255,255,255,.035); border: 1px solid var(--border); box-shadow: 0 3px 0 rgba(0,0,0,.25); transition: opacity var(--t-med), transform var(--t-med); }
+.task.is-late { border-color: rgba(255, 84, 112, .45); background: rgba(255, 84, 112, .07); }
+.task.leaving { opacity: 0; transform: translateX(-24px) rotateY(-16deg); }
+.t-text { font-weight: 500; }
+.t-meta { font-size: var(--fs-xs); color: var(--text-3); }
+.countdown { font-family: var(--font-head); font-size: var(--fs-xs); font-weight: 700; padding: 3px 9px; border-radius: var(--r-pill); background: var(--surface-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.countdown.soon { background: var(--grad-sunset); color: #fff; }
+.countdown.late { background: rgba(255, 84, 112, .2); color: #ffc2cc; }
+.t-x { color: var(--text-3); }
+.suggest { margin-top: var(--s3); border-top: 1px dashed var(--border); padding-top: var(--s3); }
+.suggest summary { cursor: pointer; color: var(--text-2); font-size: var(--fs-sm); font-weight: 600; }
+.sug { display: grid; grid-template-columns: 1fr auto auto; gap: var(--s2); align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: var(--fs-sm); }
+.task-tools { display: flex; gap: var(--s2); margin-top: var(--s2); }
+
+/* ---------- unknown numbers / todos ---------- */
+.person { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.person:last-of-type { border-bottom: 0; }
+.p-head { display: flex; align-items: center; gap: var(--s2); }
+.p-head .btn { margin-inline-start: auto; }
+.p-wants { margin: 4px 0; }
+.list-clean { margin: 4px 0; padding-inline-start: 18px; }
+.todo-list { display: flex; flex-direction: column; gap: 8px; }
+.todo { display: flex; align-items: center; gap: var(--s3); padding: 12px 14px; border-radius: var(--r-md); background: var(--slab); border: 1px solid var(--border); box-shadow: var(--depth-1); }
+.todo.danger { border-color: rgba(255, 84, 112, .5); }
+.todo .ico { font-size: 18px; }
+.todo-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+/* ---------- ask ---------- */
+.ask { padding: var(--s5); }
+.ask-row { display: flex; gap: var(--s2); }
+.ask-input { flex: 1; min-height: 50px; font-size: var(--fs-lg); }
+.ask-send { min-height: 50px; padding: 0 26px; }
+.ask-opts { display: flex; align-items: center; gap: var(--s2); margin-top: var(--s3); flex-wrap: wrap; }
+.answer:not(:empty) { margin-top: var(--s4); padding: var(--s4); border-radius: var(--r-md); background: rgba(0,0,0,.25); white-space: pre-wrap; box-shadow: inset 0 2px 8px rgba(0,0,0,.4); }
+
+/* ---------- events ---------- */
+.events-wrap { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--s5); align-items: start; }
+.event-hero { padding: var(--s6); }
+.event-hero.is-alert { border-color: rgba(255, 84, 112, .6); }
+.rel { font-family: var(--font-head); font-size: var(--fs-xs); font-weight: 700; color: #bfe8ff; text-transform: none; }
+.event-facts { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s4); color: var(--text-2); font-size: var(--fs-sm); }
+.event-actions { display: flex; gap: var(--s2); margin-top: var(--s4); flex-wrap: wrap; }
+.event-list { display: flex; flex-direction: column; }
+.event-row { display: grid; grid-template-columns: 88px 1fr auto; gap: var(--s3); align-items: start; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.event-list > div:last-child .event-row { border-bottom: 0; }
+.event-row.is-added { opacity: .6; }
+.ev-title { font-weight: 600; }
+.ev-sub { font-size: var(--fs-sm); color: var(--text-3); }
+.flag { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); color: var(--text-2); cursor: pointer; padding: 4px 9px; border-radius: var(--r-pill); border: 1px solid var(--border); background: var(--surface-1); }
+.event-row .flag { cursor: default; color: var(--danger); border-color: rgba(255, 84, 112, .4); margin-top: 4px; }
+.event-row .flag.warn { color: var(--warn); border-color: rgba(255, 181, 71, .4); }
+.flag input { appearance: none; -webkit-appearance: none; width: 15px; height: 15px; margin: 0; border-radius: 5px; border: 1.5px solid var(--border-strong); display: grid; place-items: center; cursor: pointer; }
+.flag input:checked { background: var(--grad-brand); border-color: transparent; }
+.flag input:checked::after { content: "✓"; color: #fff; font-size: 9px; font-weight: 900; }
+.flag:has(input:checked) { color: var(--text); border-color: var(--brand-line); background: var(--brand-soft); }
+.conflict { margin-top: 8px; font-size: var(--fs-sm); color: #ffc2cc; padding: 8px 10px; border-radius: var(--r-sm); background: rgba(255, 84, 112, .1); }
+.conflict.soft { color: var(--text-2); background: var(--surface-1); }
+
+/* ---------- menus ---------- */
+.menu-wrap { position: relative; }
+.menu { position: absolute; inset-inline-end: 0; top: calc(100% + 6px); z-index: 30; min-width: 230px; padding: 6px; border-radius: var(--r-md);
+  background: var(--solid-2); border: 1px solid var(--border-strong); box-shadow: 0 24px 50px -10px rgba(0,0,0,.85);
+  opacity: 0; transform: perspective(600px) rotateX(-12deg) translateY(-6px); transform-origin: top; pointer-events: none; transition: opacity var(--t-fast), transform var(--t-fast); }
+.menu.open { opacity: 1; transform: none; pointer-events: auto; }
+.menu button, .menu a { display: block; width: 100%; text-align: start; padding: 9px 12px; border: 0; border-radius: var(--r-sm); background: none; color: var(--text); font-size: var(--fs-sm); text-decoration: none; cursor: pointer; }
+.menu button:hover, .menu a:hover { background: var(--surface-2); }
+.menu hr { border: 0; border-top: 1px solid var(--border); margin: 4px 0; }
+
+/* ---------- chat cards ---------- */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: var(--s5); align-items: start; }
+.chat-card { padding: var(--s4) var(--s5); }
+.chat-card.is-active { border-color: var(--brand-line); }
+.cc-head { display: flex; align-items: flex-start; gap: var(--s2); cursor: pointer; }
+.cc-title { flex: 1; min-width: 0; }
+.cc-title .h-card { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cc-points { cursor: pointer; margin-top: var(--s2); font-size: var(--fs-sm); color: var(--text-2); }
+.cc-points ul { margin: 0; padding-inline-start: 18px; }
+.cc-points li { margin-bottom: 2px; }
+.collapse { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--t-med) var(--ease); }
+.collapse > .collapse-inner { overflow: hidden; min-height: 0; }
+.is-open > .collapse { grid-template-rows: 1fr; }
+.cc-body { display: flex; flex-direction: column; gap: var(--s3); padding-top: var(--s4); margin-top: var(--s3); border-top: 1px solid var(--border); }
+.summary-text { white-space: pre-wrap; font-size: var(--fs-sm); }
+.character { white-space: pre-wrap; font-size: var(--fs-sm); padding: 10px 12px; border-radius: var(--r-md); background: var(--brand-soft); border: 1px solid var(--brand-line); }
+.cc-actions { display: flex; gap: var(--s2); flex-wrap: wrap; }
+.work-form .field { min-height: 32px; }
+.subpanel { padding: var(--s3); border-radius: var(--r-md); background: rgba(0,0,0,.25); }
+.messages { max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+.msg { padding: 8px 10px; border-radius: var(--r-md); background: var(--surface-1); font-size: var(--fs-sm); white-space: pre-wrap; max-width: 92%; }
+.msg.me { align-self: flex-end; background: var(--brand-soft); }
+.msg time { margin-inline-start: 8px; color: var(--text-3); font-size: 11px; }
+.msg img { display: block; max-width: 100%; max-height: 220px; border-radius: var(--r-sm); margin-top: 6px; }
+.msg audio { display: block; margin-top: 6px; width: 100%; }
+.member { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: var(--fs-sm); }
+.qa-history { max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.bubble { padding: 8px 12px; border-radius: var(--r-md); font-size: var(--fs-sm); white-space: pre-wrap; max-width: 90%; }
+.bubble.user { align-self: flex-start; background: var(--brand-soft); }
+.bubble.assistant { align-self: flex-end; background: var(--surface-2); }
+.bubble.error { background: rgba(255, 84, 112, .15); color: #ffc2cc; }
+
+/* ---------- gallery ---------- */
+.gallery-bar { display: flex; gap: var(--s3); flex-wrap: wrap; margin-bottom: var(--s4); }
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--s3); margin-bottom: var(--s4); perspective: 900px; }
+.g-item { position: relative; padding: 0; border: 1px solid var(--border); border-radius: var(--r-md); overflow: hidden; aspect-ratio: 1; cursor: pointer; background: var(--solid-1);
+  box-shadow: var(--depth-1); transition: transform var(--t-med) var(--ease), box-shadow var(--t-med); }
+.g-item:hover { transform: translateZ(30px) rotateX(6deg); box-shadow: var(--depth-2); }
+.g-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.g-cap { position: absolute; inset-inline: 0; bottom: 0; padding: 18px 8px 6px; font-size: 11px; color: #fff; text-align: start; background: linear-gradient(transparent, rgba(0,0,0,.8)); }
+
+/* ---------- all chats (bottom) ---------- */
+.chats-panel { padding: var(--s4); }
+.chats-tools { display: flex; gap: var(--s2); margin-bottom: var(--s3); flex-wrap: wrap; }
+.chats-tools .field { flex: 1 1 200px; }
+.chats-tools .seg { flex: 0 1 280px; }
+.side-hint { font-size: var(--fs-xs); color: var(--text-3); }
+.chat-list { max-height: 560px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+.chat-row { display: flex; align-items: center; gap: var(--s2); padding: 6px 8px; border-radius: var(--r-sm); }
+.chat-row:hover { background: var(--surface-1); }
+.chat-row.is-current { background: var(--brand-soft); }
+.chat-row.is-off { opacity: .6; }
+.chat-name { flex: 1; min-width: 0; text-align: start; border: 0; background: none; color: var(--text); cursor: pointer; padding: 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-item.is-unknown .chat-name { color: #bfe8ff; }
+.gear.on { background: var(--surface-2); }
+.listen-tags { font-size: 12px; letter-spacing: 2px; }
+.listen-panel { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 8px 10px 40px; }
+.lp-title { width: 100%; font-size: var(--fs-xs); color: var(--text-3); }
+
+/* ---------- memory ---------- */
+.neon-line { height: 2px; margin-bottom: var(--s6); border-radius: 2px; background: var(--grad-brand); box-shadow: 0 0 20px rgba(217, 70, 239, .8); opacity: .7; }
+.mem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s5); align-items: start; }
+.q-list { display: flex; flex-direction: column; gap: var(--s3); }
+.q { padding: var(--s3); border-radius: var(--r-md); background: rgba(0,0,0,.22); border: 1px solid var(--border); }
+.q-text { margin: 8px 0; font-weight: 600; }
+.q-row { display: flex; gap: var(--s2); align-items: flex-start; }
+.q-row textarea { flex: 1; }
+.done-all { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: var(--s4); }
+.mem-add { display: grid; grid-template-columns: 140px 1fr auto; gap: var(--s2); }
+.facts { display: flex; flex-direction: column; }
+.fact { display: grid; grid-template-columns: auto 1fr auto; gap: var(--s2); align-items: start; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: var(--fs-sm); }
+.f-q { color: var(--text-3); font-size: var(--fs-xs); }
+.person-card { padding: var(--s3); margin-top: var(--s2); border-radius: var(--r-md); background: rgba(0,0,0,.2); }
+.p-prof { white-space: pre-wrap; font-size: var(--fs-sm); color: var(--text-2); margin: 6px 0; }
+
+/* ---------- drawer / dialogs / toast ---------- */
+.scrim { position: fixed; inset: 0; background: rgba(4, 4, 10, .6); backdrop-filter: blur(4px); opacity: 0; pointer-events: none; transition: opacity var(--t-med); z-index: 40; }
+.scrim.open { opacity: 1; pointer-events: auto; }
+.drawer { position: fixed; inset-block: 0; left: 0; width: min(560px, 100vw); background: var(--solid-1); border-right: 1px solid var(--border-strong); z-index: 45;
+  padding: var(--s5); overflow-y: auto; transform: translateX(-102%); transition: transform var(--t-med) var(--ease); box-shadow: 30px 0 60px -20px rgba(0,0,0,.8); }
+.drawer.open { transform: none; }
+.drawer .chat-card { border: 0; background: transparent; box-shadow: none; transform: none; }
+dialog.modal { border: 1px solid var(--border-strong); border-radius: var(--r-lg); background: var(--solid-1); color: var(--text); padding: var(--s5); width: min(560px, 94vw);
+  box-shadow: 0 40px 100px -20px rgba(0,0,0,.9); }
+dialog.modal::backdrop { background: rgba(4, 4, 10, .65); backdrop-filter: blur(4px); }
+.edit-form { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); }
+.lbl { display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-sm); color: var(--text-2); }
+.lbl.full { grid-column: 1 / -1; }
+.edit-actions { grid-column: 1 / -1; display: flex; gap: var(--s2); align-items: center; flex-wrap: wrap; }
+.lightbox { width: min(900px, 96vw) !important; }
+.lightbox img { display: block; max-width: 100%; max-height: 72vh; margin: 0 auto; border-radius: var(--r-md); }
+.lb-text { margin-top: 8px; white-space: pre-wrap; color: var(--text-2); }
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translate(-50%, 20px); opacity: 0; z-index: 60; pointer-events: none; padding: 12px 20px; border-radius: var(--r-pill);
+  background: var(--solid-2); border: 1px solid var(--border-strong); font-family: var(--font-head); font-weight: 600; box-shadow: 0 20px 40px -10px rgba(0,0,0,.8); transition: opacity var(--t-med), transform var(--t-med) var(--ease); }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast.bad { border-color: rgba(255, 84, 112, .6); color: var(--danger); }
+.banner { padding: 10px 16px; text-align: center; background: rgba(255, 181, 71, .15); color: var(--warn); border-bottom: 1px solid rgba(255, 181, 71, .3); }
+.tabbar { display: none; }
+
+/* ---------- responsive ---------- */
+@media (max-width: 1100px) {
+  .nav { display: none; }
+  .love-grid { grid-template-columns: 1fr 1fr; }
+  .love-grid .love-tile.lists { grid-column: 1 / -1; }
+}
+@media (max-width: 860px) {
+  .bento { grid-template-columns: 1fr; }
+  .bento > * { grid-column: auto; }
+  .events-wrap, .mem-grid { grid-template-columns: 1fr; }
+  .status, #range { display: none; }
+}
+@media (max-width: 640px) {
+  :root { --fs-3xl: 32px; }
+  main { padding: var(--s4) 16px 110px; }
+  .topbar { padding: 10px 16px; }
+  .brand small { display: none; }
+  .love-hero { padding: var(--s4); border-radius: var(--r-lg); }
+  .love-top { gap: var(--s3); }
+  .heart3d { width: 60px; height: 60px; }
+  .heart3d .core { font-size: 22px; }
+  .love-actions { width: 100%; justify-content: space-between; }
+  .love-grid { grid-template-columns: 1fr; }
+  .love-reply { grid-template-columns: 1fr; }
+  .task-add { grid-template-columns: 1fr auto; }
+  .task-add input[type=datetime-local] { grid-column: 1 / -1; grid-row: 2; }
+  .mem-add { grid-template-columns: 1fr auto; }
+  .mem-add select { grid-column: 1 / -1; }
+  .cards { grid-template-columns: 1fr; }
+  .tabbar { display: flex; position: fixed; inset-inline: 10px; bottom: max(10px, env(safe-area-inset-bottom)); z-index: 30; height: 60px; border-radius: 20px; padding: 6px;
+    background: rgba(18, 17, 36, .9); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid var(--border-strong); box-shadow: 0 20px 40px -10px rgba(0,0,0,.9); }
+  .tabbar a { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; border-radius: 14px;
+    color: var(--text-2); text-decoration: none; font-size: 11px; font-weight: 600; }
+  .tabbar a span { font-size: 18px; line-height: 1; }
+  .tabbar a.is-love { color: var(--love-2); }
+  .tabbar a:active { background: var(--surface-2); }
+  .tabbar a .badge { position: absolute; top: 2px; inset-inline-end: 18%; height: 16px; min-width: 16px; font-size: 10px; padding: 0 4px; }
+  .toast { bottom: 84px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .reveal { opacity: 1; transform: none; }
+}
+</style>
+</head>
+<body>
+<!-- First run: link this computer to WhatsApp with a pairing code (no QR, no browser window). -->
+<div id="linkOverlay" class="hidden" style="position:fixed;inset:0;z-index:1000;display:grid;place-items:center;background:rgba(4,4,10,.93);backdrop-filter:blur(8px);padding:16px">
+  <div class="card card-pad" style="width:min(520px,96vw);text-align:center">
+    <h2 style="margin:0 0 6px">חיבור לוואטסאפ</h2>
+    <div id="linkStep1">
+      <p class="meta" style="margin:0 0 14px">התוכנה מתחברת לוואטסאפ שלך כ"מכשיר מקושר" וקוראת בלבד. היא לא שולחת הודעות. הכול נשמר במחשב הזה.</p>
+      <form id="linkForm" class="row" style="gap:8px;justify-content:center;flex-wrap:wrap">
+        <input class="field" id="linkPhone" inputmode="tel" autocomplete="off" dir="ltr" placeholder="מספר הטלפון שלך, למשל 0501234567" style="flex:1 1 240px;text-align:center">
+        <button class="btn btn-primary" type="submit" id="linkBtn">קבל קוד</button>
+      </form>
+      <div class="meta" id="linkMsg" style="margin-top:10px;min-height:1.4em"></div>
+    </div>
+    <div id="linkStep2" class="hidden">
+      <div style="font:700 40px/1.2 ui-monospace,Consolas,monospace;letter-spacing:6px;margin:14px 0" dir="ltr" id="linkCode"></div>
+      <ol class="meta" style="text-align:right;margin:0 0 12px;padding-inline-start:22px;line-height:1.9">
+        <li>פתח את וואטסאפ בטלפון.</li>
+        <li>הגדרות (או ⋮) › מכשירים מקושרים › קישור מכשיר.</li>
+        <li>לחץ "קישור באמצעות מספר טלפון במקום זאת".</li>
+        <li>הקלד את הקוד שמופיע כאן.</li>
+      </ol>
+      <button class="btn btn-ghost btn-sm" type="button" id="linkAgain">קוד חדש / מספר אחר</button>
+      <div class="meta" style="margin-top:8px">הקוד תקף לזמן קצר. ממתין לאישור מהטלפון…</div>
+    </div>
+    <div id="linkStep3" class="hidden">
+      <div style="font-size:44px;margin:8px 0">✓</div>
+      <p style="margin:0 0 6px"><b>מחובר.</b> מוריד את היסטוריית השיחות מהטלפון.</p>
+      <p class="meta" id="linkHistory" style="margin:0 0 6px"></p>
+      <p class="meta" style="margin:0 0 14px">וואטסאפ שולח את ההיסטוריה פעם אחת בלבד. השאר את התוכנה פתוחה ואת הטלפון מחובר לאינטרנט עד שהמספר מפסיק לעלות.</p>
+      <button class="btn btn-primary" type="button" id="linkDone">המשך לדשבורד</button>
+    </div>
+  </div>
+</div>
+
+<dialog class="modal settings-modal" id="settingsDialog" aria-label="הגדרות"></dialog>
+
+<div class="scene" aria-hidden="true"><div class="orb3d o1"></div><div class="orb3d o2"></div><div class="orb3d o3"></div><div class="floor"></div></div>
+<div class="banner hidden" id="versionBanner"><b>הבוט רץ עם גרסה ישנה.</b> הפעל אותו מחדש (restart-bot.bat) כדי שהעדכונים יעבדו.</div>
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark"><i></i></div>
+    <div>סיכומים<small>וואטסאפ · סיכומים · משימות</small></div>
+  </div>
+  <nav class="nav" aria-label="ניווט">
+    <a href="#loveBlock" class="is-love hidden" data-love-nav>💗 בן/בת זוג</a>
+    <a href="#todayBlock">היום</a>
+    <a href="#tasks">משימות</a>
+    <a href="#eventsBlock">אירועים</a>
+    <a href="#cardsBlock">שיחות</a>
+    <a href="#galleryBlock">גלריה</a>
+    <a href="#memoryBlock">שאלות<span class="badge badge-new hidden" data-q-count></span></a>
+  </nav>
+  <div class="spacer"></div>
+  <div class="status" id="status"></div>
+  <select class="select" id="range" title="טווח סיכום">
+    <option value="24">24 שעות</option>
+    <option value="72">3 ימים</option>
+    <option value="168">שבוע</option>
+  </select>
+  <button class="btn btn-ghost btn-icon" id="openSettings" type="button" title="הגדרות">⚙</button>
+  <button class="btn btn-primary" id="refreshAll">סכם הכל</button>
+</header>
+
+<main>
+  <!-- ★ 1. Partner card - the most important dashboard. Always first, full width, never replaced by an error. -->
+  <section class="block" id="loveBlock">
+    <article class="card love-hero tilt" id="love" data-tilt="3"><div class="skeleton">טוען...</div></article>
+  </section>
+
+  <!-- care trackers: medicines, baby meals, pets, plants (public/care.js) -->
+  <section class="block" id="careBlock">
+    <div class="block-head"><h2 class="h-section"><span class="sec-ico">💊</span>מעקבים</h2><button class="btn btn-ghost btn-sm" type="button" data-open-settings="care">+ מעקב חדש</button></div>
+    <div class="care-grid" id="care"><div class="skeleton">טוען...</div></div>
+  </section>
+
+  <!-- 2. today: tasks, unknown numbers, events that need action -->
+  <section class="block" id="todayBlock">
+    <div class="block-head"><h2 class="h-section is-hot"><span class="sec-ico">⚡</span>היום</h2><span class="meta" id="todayLabel"></span></div>
+    <div class="bento">
+      <article class="card card-pad tasks-card span-12" id="tasks"><div class="skeleton">טוען משימות...</div></article>
+      <article class="card card-pad span-6 tilt" id="unknown"><div class="skeleton">בודק פניות ממספרים לא שמורים...</div></article>
+      <div class="todo-list span-6" id="todos"></div>
+    </div>
+  </section>
+
+  <!-- 3. ask -->
+  <section class="block">
+    <div class="block-head"><h2 class="h-section"><span class="sec-ico">✨</span>שאל שאלה</h2></div>
+    <div class="card ask tone-violet">
+      <div class="ask-row">
+        <input type="text" class="field ask-input" id="askInput" placeholder="למשל: מה סוכם בקבוצת המשפחה השבוע? מתי הפגישה עם דני?">
+        <button class="btn btn-primary ask-send" id="askBtn">שאל</button>
+      </div>
+      <div class="ask-opts">
+        <span class="meta">חפש ב:</span>
+        <select class="select" id="askScope"><option value="">כל השיחות המסומנות</option></select>
+        <select class="select" id="askHours">
+          <option value="24">24 שעות</option>
+          <option value="72" selected>3 ימים</option>
+          <option value="168">שבוע</option>
+          <option value="720">חודש</option>
+        </select>
+      </div>
+      <div class="answer" id="askAnswer"></div>
+    </div>
+  </section>
+
+  <!-- 4. upcoming events -->
+  <section class="block" id="eventsBlock">
+    <div class="block-head">
+      <h2 class="h-section"><span class="sec-ico">🗓</span>אירועים קרובים · 14 יום</h2>
+      <span id="calStatus"></span>
+    </div>
+    <div class="events-wrap" id="events"><div class="skeleton">טוען...</div></div>
+  </section>
+
+  <!-- 5. my chats -->
+  <section class="block" id="cardsBlock">
+    <div class="block-head"><h2 class="h-section"><span class="sec-ico">💬</span>השיחות שלי</h2><span class="meta">רק השיחות המסומנות ✓</span></div>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <!-- 6. gallery -->
+  <section class="block" id="galleryBlock">
+    <div class="block-head"><h2 class="h-section"><span class="sec-ico">🖼</span>גלריה</h2><span class="meta">פרסומות מסוננות ולא נשמרות</span></div>
+    <div class="gallery-bar">
+      <div class="seg" id="galleryKind">
+        <button data-gkind="people">אנשים</button>
+        <button data-gkind="other">דברים</button>
+        <button data-gkind="all">הכל</button>
+      </div>
+      <select class="select" id="galleryChat"><option value="">כל הצ׳אטים</option></select>
+    </div>
+    <div class="gallery" id="gallery"></div>
+    <div style="text-align:center"><button class="btn hidden" id="galleryMore">טען עוד</button></div>
+  </section>
+
+  <!-- 7. all chats (marked / not marked) - at the bottom -->
+  <section class="block" id="chatsBlock">
+    <div class="block-head"><h2 class="h-section"><span class="sec-ico">☰</span>כל השיחות</h2>
+      <span class="side-hint">✓ = בדשבורד ובסיכום של 20:00 · שם = פתיחת סיכום · האייקונים = מה הבוט קורא</span></div>
+    <div class="card chats-panel">
+      <div class="chats-tools">
+        <input type="search" class="field" id="search" placeholder="חיפוש שיחה...">
+        <div class="seg" id="chatFilter">
+          <button data-filter="selected">מסומנים</button>
+          <button data-filter="all">כל הצ׳אטים</button>
+        </div>
+        <button class="btn btn-ghost btn-icon" data-sync-chats title="טען מחדש את כל הצ׳אטים והקבוצות מוואטסאפ">⟳</button>
+      </div>
+      <div class="chat-list" id="chatList"><div class="skeleton">טוען...</div></div>
+    </div>
+  </section>
+
+  <!-- 8. memory: the bot's questions for today + what it already knows (end of page) -->
+  <section class="block" id="memoryBlock">
+    <div class="neon-line"></div>
+    <div class="block-head">
+      <h2 class="h-section is-hot"><span class="sec-ico">🧠</span>הבוט לומד אותך · שאלות היום</h2>
+      <div class="row"><span class="meta" id="memMeta"></span><button class="btn btn-sm" id="genQuestions">שאל אותי עכשיו</button></div>
+    </div>
+    <div class="mem-grid">
+      <div class="card card-pad tone-violet" id="questions"><div class="skeleton">טוען שאלות...</div></div>
+      <div class="card card-pad" id="knowledge"><div class="skeleton">טוען...</div></div>
+    </div>
+  </section>
+</main>
+
+<nav class="tabbar" aria-label="ניווט מהיר">
+  <a href="#loveBlock" class="is-love hidden" data-love-nav><span>💗</span>זוגיות</a>
+  <a href="#todayBlock"><span>⚡</span>היום</a>
+  <a href="#eventsBlock"><span>🗓</span>אירועים</a>
+  <a href="#chatsBlock"><span>💬</span>שיחות</a>
+  <a href="#memoryBlock"><span>🧠</span>שאלות<span class="badge badge-new hidden" data-q-count></span></a>
+</nav>
+
+<dialog class="modal" id="editDialog">
+  <div class="card-head"><h3 class="h-card">השלמת פרטי אירוע</h3><button class="btn btn-ghost btn-icon" type="button" data-close-dialog title="סגור">✕</button></div>
+  <form class="edit-form" id="editForm" data-edit-form="">
+    <label class="lbl full">כותרת<input class="field" name="title" required></label>
+    <label class="lbl wide">תאריך<input class="field" type="date" name="date" required></label>
+    <label class="lbl">שעת התחלה<input class="field" type="time" name="start_time"></label>
+    <label class="lbl">שעת סיום<input class="field" type="time" name="end_time"></label>
+    <label class="lbl full">מיקום<input class="field" name="location" placeholder="כתובת / מקום"></label>
+    <label class="lbl full">פרטים<input class="field" name="notes" placeholder="מה להביא, עם מי..."></label>
+    <div class="edit-actions"><button class="btn btn-primary" type="submit">שמור</button>
+      <a class="btn" id="editGcal" target="_blank" rel="noopener noreferrer">➕ הוסף ליומן</a>
+      <span class="meta" id="edit-msg"></span></div>
+  </form>
+</dialog>
+
+<dialog class="modal lightbox" id="lightbox">
+  <div class="card-head" style="margin-bottom:8px"><span class="meta" id="lbMeta"></span>
+    <div class="row"><button class="btn btn-ghost btn-sm" id="lbOpenChat">לשיחה</button><button class="btn btn-ghost btn-icon" type="button" data-close-lightbox title="סגור">✕</button></div></div>
+  <img id="lbImg" alt="">
+  <div class="lb-text" id="lbText"></div>
+</dialog>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="סיכום שיחה"></aside>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ===================== helpers ===================== */
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const TZ = 'Asia/Jerusalem';
+let toastTimer = null;
+function toast(text, bad = false) {
+  const el = $('#toast');
+  el.textContent = text;
+  el.classList.toggle('bad', bad);
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+const fmtTime = (ts) => new Date(ts * 1000).toLocaleString('he-IL', { timeZone: TZ, day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
+const ago = (ts) => {
+  if (!ts) return '';
+  const m = Math.round((Date.now() / 1000 - ts) / 60);
+  if (m < 1) return 'עכשיו';
+  if (m < 60) return `לפני ${m} דק׳`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `לפני ${h} שע׳`;
+  return fmtTime(ts);
+};
+const todayIL = () => new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date());
+const daysFromToday = (dateStr) => Math.round((Date.parse(dateStr + 'T12:00:00Z') - Date.parse(todayIL() + 'T12:00:00Z')) / 86400000);
+const relLabel = (dateStr) => {
+  const d = daysFromToday(dateStr);
+  if (d <= 0) return 'היום';
+  if (d === 1) return 'מחר';
+  if (d === 2) return 'מחרתיים';
+  return `בעוד ${d} ימים`;
+};
+// What the bot reads per chat - each option is its own ✓ (empty = not listening).
+const FLAGS = [
+  { key: 'text', label: 'מלל', ico: '💬' },
+  { key: 'voice', label: 'הקלטות', ico: '🎙' },
+  { key: 'images', label: 'תמונות', ico: '🖼' },
+  { key: 'links', label: 'קישורים', ico: '🔗' },
+];
+const flagsOf = (c) => new Set(String(c.listen_mode || '').split(',').filter(Boolean));
+const isListening = (c) => flagsOf(c).size > 0;
+const listenTags = (c) => { const f = flagsOf(c); return f.size ? FLAGS.filter((x) => f.has(x.key)).map((x) => x.ico).join(' ') : '🔇'; };
+// A chat without a name is shown the way WhatsApp shows it: the phone number, e.g. +972 50-123-4567.
+function chatLabel(c) {
+  const isJid = (s) => /@(s\.whatsapp\.net|c\.us|lid|g\.us)$/.test(String(s || ''));
+  if (c.name && !isJid(c.name)) return c.name; // older rows may hold the technical id in place of a name
+  if (c.is_group) return 'קבוצה ללא שם';
+  const id = String(c.chat_id || '');
+  if (!id.endsWith('@s.whatsapp.net') && !id.endsWith('@c.us')) return 'מספר לא ידוע';
+  const d = id.split('@')[0].split(':')[0].replace(/\D/g, '');
+  const il = /^972(\d{2})(\d{3})(\d{4})$/.exec(d);
+  const LRI = String.fromCharCode(0x2066), PDI = String.fromCharCode(0x2069); // keep the number left-to-right inside Hebrew text
+  return LRI + (il ? `+972 ${il[1]}-${il[2]}-${il[3]}` : `+${d}`) + PDI;
+}
+function flagChips(c, where) {
+  const f = flagsOf(c);
+  return FLAGS.map((x) => `<label class="flag"><input type="checkbox" data-flag="${x.key}" data-flag-rowid="${c.rowid}" ${f.has(x.key) ? 'checked' : ''}>${x.label}</label>`).join('') +
+    (where === 'side' ? `<label class="flag" title="בצ׳אט שלא סימנת נשמר בארכיון רק הטקסט. כאן אפשר לשמור גם את התמונות עצמן, למשך 30 יום, ואז הן נמחקות"><input type="checkbox" data-archive-images="${c.rowid}" ${c.archive_images ? 'checked' : ''}>🗄️ שמור תמונות בארכיון (30 יום)</label>` : '') +
+    (where === 'side' && !c.is_group ? `<button class="btn btn-ghost btn-sm" data-love-set="${c.rowid}">💛 בן/בת הזוג שלי</button>` : '');
+}
+const openListen = new Set();
+const UI_VERSION = 11; // must match SERVER_VERSION in web.js
+let chatFilter = (() => { try { return localStorage.getItem('chatFilter') || 'all'; } catch { return 'all'; } })();
+function showOldVersion() { $('#versionBanner').classList.remove('hidden'); }
+async function checkVersion() {
+  try {
+    const r = await fetch('/api/version');
+    if (!r.ok || (await r.json()).version !== UI_VERSION) showOldVersion();
+  } catch { /* offline */ }
+}
+function renderFilter() {
+  document.querySelectorAll('#chatFilter button').forEach((b) => b.classList.toggle('on', b.dataset.filter === chatFilter));
+}
+let chats = [];
+let eventsCache = [];
+let currentRowid = null;
+
+async function api(path, opts = {}) {
+  const res = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...opts });
+  if (!res.ok) {
+    const msg = (await res.json().catch(() => ({}))).error || res.statusText;
+    if (res.status === 404 && msg === 'not found') { showOldVersion(); throw new Error('הבוט צריך הפעלה מחדש כדי לטעון את העדכון'); }
+    throw new Error(msg);
+  }
+  return res.json();
+}
+
+function bulletsOf(text, max = 3) {
+  const lines = String(text || '').split('\n').map((l) => l.replace(/\*\*|__|^#+\s*/g, '').trim()).filter(Boolean);
+  const bullets = lines.filter((l) => /^[•\-*·–]\s*/.test(l)).map((l) => l.replace(/^[•\-*·–]\s*/, ''));
+  return (bullets.length ? bullets : lines).slice(0, max);
+}
+
+/* ===================== menus ===================== */
+function closeMenus(except) {
+  document.querySelectorAll('.menu.open').forEach((m) => { if (m !== except) m.classList.remove('open'); });
+}
+document.addEventListener('click', (e) => {
+  const toggle = e.target.closest('[data-menu-toggle]');
+  if (toggle) {
+    e.stopPropagation();
+    const menu = toggle.parentElement.querySelector('.menu');
+    closeMenus(menu);
+    menu.classList.toggle('open');
+    return;
+  }
+  if (!e.target.closest('.menu')) closeMenus();
+});
+
+/* ===================== status bar ===================== */
+async function loadStatus() {
+  let cal = null;
+  try { cal = await api('/api/calendar'); } catch { /* ignore */ }
+  const calChip = !cal || !cal.configured
+    ? '<span class="chip" title="הוסף GOOGLE_CALENDAR_ICS_URL לקובץ .env"><span class="dot"></span>יומן לא מחובר</span>'
+    : cal.ok
+      ? `<span class="chip chip-info" title="${cal.count} אירועים ביומן"><span class="dot info"></span>יומן מחובר</span>`
+      : `<span class="chip chip-danger" title="${esc(cal.error || '')}"><span class="dot bad"></span>שגיאת יומן</span>`;
+  let m = null;
+  try { m = await api('/api/models'); } catch { /* older bot */ }
+  const modelChip = m ? (m.fast
+    ? `<span class="chip ${m.fast_active ? 'chip-success' : 'chip-danger'}" title="מודל קטן מסנן: ${esc(m.fast)}\nמודל גדול: ${esc(m.big)}${m.stats ? `\nסוננו ${m.stats.filtered_out} הודעות לא רלוונטיות, ${m.stats.gated_out} הודעות לא נשלחו לחילוץ אירועים` : ''}"><span class="dot ${m.fast_active ? 'ok' : 'bad'}"></span>2 מודלים</span>`
+    : `<span class="chip" title="מודל: ${esc(m.big)}"><span class="dot"></span>מודל אחד</span>`) : '';
+  const cloud = (m && m.cloud) || [];
+  const cloudChip = cloud.length
+    ? `<span class="chip ${cloud.some((c) => c.ready) ? 'chip-info' : 'chip-danger'}" title="${esc(cloud.map((c) => `${c.name} (${c.model})${c.private ? '' : ' - קבוצות בלבד'}: ${c.ready ? 'זמין' : `לא זמין${c.last_error ? ` - ${c.last_error}` : ''}`} · ${c.ok} תשובות`).join('\n'))}"><span class="dot ${cloud.some((c) => c.ready) ? 'info' : 'bad'}"></span>☁ ${cloud.filter((c) => c.ready).length}/${cloud.length} ענן</span>`
+    : '';
+  $('#status').innerHTML = cloudChip + modelChip + calChip;
+  $('#calStatus').innerHTML = cal && cal.configured && cal.ok ? '<span class="meta">בודק התנגשויות מול היומן שלך</span>' : '';
+}
+
+/* ===================== chats (sidebar) ===================== */
+async function loadChats() {
+  chats = await api('/api/chats');
+  renderChatList();
+  renderCards();
+  populateAskScope();
+  populateGalleryChats();
+  if (memState.facts && !document.querySelector('#knowledge :focus')) renderKnowledge();
+  autoSummarizeMissing();
+}
+
+function populateAskScope() {
+  const sel = $('#askScope');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">כל השיחות המסומנות</option>' +
+    chats.filter((c) => isListening(c))
+      .map((c) => `<option value="${c.rowid}">${c.is_group ? '👥' : '👤'} ${esc(chatLabel(c))}</option>`).join('');
+  sel.value = current;
+}
+
+function renderChatList() {
+  const q = $('#search').value.trim();
+  renderFilter();
+  const list = chats.filter((c) => (!q || (chatLabel(c) + ' ' + c.chat_id).includes(q)) && (chatFilter === 'all' || c.selected));
+  $('#chatList').innerHTML = list.length ? list.map((c) => `
+    <div class="chat-item ${c.is_unknown ? 'is-unknown' : ''}">
+      <div class="chat-row ${c.rowid === currentRowid ? 'is-current' : ''} ${isListening(c) ? '' : 'is-off'}">
+        <input type="checkbox" class="check" data-rowid="${c.rowid}" ${c.selected ? 'checked' : ''} title="הצג בדשבורד ובסיכום היומי">
+        <button class="chat-name" data-open="${c.rowid}" title="פתח סיכום">${c.is_group ? '👥' : '👤'} ${esc(chatLabel(c))}</button>
+        ${c.recent_count ? `<span class="badge ${isListening(c) ? 'badge-new' : ''}" title="הודעות ב-24 שעות">${c.recent_count}</span>` : ''}
+        <button class="btn btn-ghost btn-sm gear ${openListen.has(c.rowid) ? 'on' : ''}" data-listen-toggle="${c.rowid}" title="מה הבוט קורא בשיחה הזו">
+          <span class="listen-tags">${listenTags(c)}</span></button>
+      </div>
+      ${openListen.has(c.rowid) ? `<div class="listen-panel"><span class="lp-title">סמן ✓ מה הבוט יקרא (בלי סימון = לא מאזין)</span>${flagChips(c, 'side')}</div>` : ''}
+    </div>`).join('') : `<div class="empty">${chatFilter === 'selected' ? 'אין צ׳אטים מסומנים - עבור ל"כל הצ׳אטים" וסמן ✓' : 'עדיין אין שיחות שמורות'}</div>`;
+}
+
+/* ===================== chat cards ===================== */
+function renderCard(c, { expanded = false, inDrawer = false } = {}) {
+  const pts = c.summary ? bulletsOf(c.summary.content) : [];
+  const updated = c.summary ? c.summary.created_at : c.last_message_at;
+  const isFull = c.summary && c.summary.detail === 'full';
+  return `
+  <article class="card chat-card ${expanded ? 'is-open' : ''} ${c.recent_count && isListening(c) ? 'is-active' : ''}" id="${inDrawer ? 'dcard' : 'card'}-${c.rowid}" data-card="${c.rowid}">
+    <div class="cc-head" data-toggle-card="${c.rowid}">
+      <div class="cc-title">
+        <h3 class="h-card">${c.is_group ? '👥' : '👤'} ${esc(chatLabel(c))}</h3>
+        <div class="meta">${c.event_prefix ? `<span class="chip chip-brand" style="height:20px">עבודה · ${esc(c.event_prefix)}</span> ` : ''}${updated ? `עודכן ${ago(updated)}` : 'עוד לא סוכם'}${isFull ? ' · סיכום מורחב' : ''}${isListening(c) ? '' : ' · 🔇 לא מאזין'}</div>
+      </div>
+      ${c.recent_count ? `<span class="badge ${isListening(c) ? 'badge-new' : ''}" title="הודעות ב-24 שעות">${c.recent_count}</span>` : ''}
+      <div class="menu-wrap">
+        <button class="btn btn-ghost btn-icon" data-menu-toggle title="עוד">⋯</button>
+        <div class="menu">
+          <button data-msgs="${c.rowid}">💬 הצג הודעות</button>
+          <button data-profile="${c.rowid}">👥 הכר את המשתתפים</button>
+          <button data-learn="${c.rowid}">🧠 למד את אופי השיחה</button>
+          <button data-chat="${c.rowid}">🤖 צ'אט עם הבוט והערות</button>
+          <button data-sum-short="${c.rowid}">↻ רענן סיכום קצר</button>
+          <button data-backfill="${c.rowid}">⤓ טען היסטוריה מוואטסאפ</button>
+          ${inDrawer && !c.selected ? `<hr><button data-select-add="${c.rowid}">✓ הוסף לדשבורד</button>` : ''}
+        </div>
+      </div>
+    </div>
+    <div class="cc-points" data-toggle-card="${c.rowid}">
+      ${pts.length ? `<ul>${pts.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>` : '<span class="meta">אין עדיין סיכום - לחץ לפתיחה</span>'}
+    </div>
+    <div class="collapse"><div class="collapse-inner"><div class="cc-body">
+      <div class="summary-text">${c.summary ? esc(c.summary.content) : '<span class="meta">אין עדיין סיכום.</span>'}</div>
+      <div class="meta">${c.summary ? `${c.summary.message_count} הודעות · ${fmtTime(c.summary.created_at)}` : ''}</div>
+      ${c.group_profile ? `<div class="character" data-character="${c.rowid}"><b>🧠 אופי השיחה</b>${c.group_profile_at ? ` <span class="meta">· נלמד ${ago(c.group_profile_at)}</span>` : ''}
+${esc(c.group_profile)}</div>` : ''}
+      <div class="row" style="flex-wrap:wrap;gap:6px"><span class="meta">הבוט קורא:</span>${flagChips(c, 'card')}</div>
+      <label class="flag" title="השיחה הזו לא נשלחת לאף מודל בענן - רק למודל במחשב שלך"><input type="checkbox" data-local-only="${c.rowid}" ${c.local_only ? 'checked' : ''}>🔒 רק במחשב (בלי ענן)</label>
+      <form class="row work-form" data-work-form="${c.rowid}" style="flex-wrap:wrap;gap:6px">
+        <span class="meta">צ׳אט עבודה - שם בכל אירוע:</span>
+        <input class="field" name="prefix" value="${esc(c.event_prefix || '')}" placeholder="למשל: שמשון" style="flex:0 1 140px;min-height:32px">
+        <button class="btn btn-sm" type="submit">${c.event_prefix ? '⟳ נתח עבודות' : 'שמור'}</button>
+        <span class="meta" data-work-msg></span>
+      </form>
+      <div class="cc-actions">
+        <button class="btn btn-primary" data-sum-full="${c.rowid}">סכם בהרחבה</button>
+        <button class="btn" data-msgs="${c.rowid}">הודעות</button>
+      </div>
+      <div class="subpanel hidden" id="${inDrawer ? 'd' : ''}msgs-${c.rowid}"></div>
+      <div class="subpanel hidden" id="${inDrawer ? 'd' : ''}profile-${c.rowid}"></div>
+      <div class="subpanel hidden" id="${inDrawer ? 'd' : ''}chatbox-${c.rowid}">
+        <div class="row" style="margin-bottom:8px">
+          <input type="text" class="field" id="${inDrawer ? 'd' : ''}notes-${c.rowid}" placeholder="הערות רקע על הקבוצה (מידע שלא מופיע בהודעות)...">
+          <button class="btn btn-sm" data-save-notes="${c.rowid}">שמור</button>
+        </div>
+        <div class="qa-history" id="${inDrawer ? 'd' : ''}qa-${c.rowid}"></div>
+        <div class="row">
+          <input type="text" class="field" id="${inDrawer ? 'd' : ''}qa-input-${c.rowid}" data-qa-input="${c.rowid}" placeholder="שאל את הבוט על השיחה הזו...">
+          <button class="btn btn-primary btn-sm" data-qa-send="${c.rowid}">שלח</button>
+        </div>
+      </div>
+    </div></div></div>
+  </article>`;
+}
+
+function renderCards() {
+  const selected = chats.filter((c) => c.selected);
+  // Most activity first, so what's new is at the top.
+  selected.sort((a, b) => (b.recent_count - a.recent_count) || ((b.last_message_at || 0) - (a.last_message_at || 0)));
+  const open = new Set([...document.querySelectorAll('#cards .chat-card.is-open')].map((el) => Number(el.dataset.card)));
+  $('#cards').innerHTML = selected.length
+    ? selected.map((c) => renderCard(c, { expanded: open.has(c.rowid) })).join('')
+    : '<div class="empty">סמן ✓ ליד שיחות בסרגל הצד כדי לראות כאן את הסיכום שלהן.</div>';
+}
+
+// Scope helper: the card may live on the dashboard or in the drawer.
+function cardEl(rowid) {
+  return document.getElementById(`dcard-${rowid}`) || document.getElementById(`card-${rowid}`);
+}
+function part(rowid, name) {
+  const inDrawer = Boolean(document.getElementById(`dcard-${rowid}`));
+  return document.getElementById(`${inDrawer ? 'd' : ''}${name}-${rowid}`);
+}
+
+function alertInline(rowid, text) {
+  const el = cardEl(rowid);
+  const m = el && el.querySelector('.cc-title .meta');
+  if (m) m.textContent = text;
+}
+
+function toggleCard(rowid, force) {
+  const el = cardEl(rowid);
+  if (!el) return;
+  el.classList.toggle('is-open', force ?? !el.classList.contains('is-open'));
+}
+
+async function openChat(rowid) {
+  currentRowid = rowid;
+  renderChatList();
+  const c = chats.find((x) => x.rowid === rowid);
+  if (!c) return;
+  if (c.selected && document.getElementById(`card-${rowid}`)) {
+    closeDrawer();
+    toggleCard(rowid, true);
+    document.getElementById(`card-${rowid}`).scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
+  if (!c.summary) {
+    try { c.summary = (await api(`/api/chats/${rowid}/summary`)).summary; } catch { /* ignore */ }
+  }
+  $('#drawer').innerHTML = `<div class="row" style="justify-content:space-between;margin-bottom:8px">
+      <span class="meta">סיכום שיחה</span><button class="btn btn-ghost btn-icon" data-close-drawer title="סגור">✕</button></div>` +
+    renderCard(c, { expanded: true, inDrawer: true });
+  $('#drawer').classList.add('open');
+  $('#scrim').classList.add('open');
+  if (!c.summary && isListening(c) && c.total_count) summarize(rowid, null, 'short');
+}
+function closeDrawer() {
+  $('#drawer').classList.remove('open');
+  $('#scrim').classList.remove('open');
+}
+
+async function summarize(rowid, btn, detail = 'short') {
+  const el = cardEl(rowid);
+  const original = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = detail === 'full' ? 'מסכם בהרחבה...' : 'מסכם...'; }
+  const box = el && el.querySelector('.summary-text');
+  if (box && !btn) box.innerHTML = '<span class="meta">מסכם...</span>';
+  try {
+    const r = await api(`/api/chats/${rowid}/summarize`, { method: 'POST', body: JSON.stringify({ hours: Number($('#range').value), detail }) });
+    const chat = chats.find((c) => c.rowid === rowid);
+    if (chat) chat.summary = r.summary;
+    if (!r.summary) {
+      if (box) box.innerHTML = '<span class="meta">אין הודעות בטווח הזה.</span>';
+    } else if (document.getElementById(`dcard-${rowid}`)) {
+      openChat(rowid);
+    } else {
+      renderCards();
+      if (detail === 'full') toggleCard(rowid, true);
+    }
+  } catch (err) {
+    if (box) box.innerHTML = `<span class="error-text">שגיאה: ${esc(err.message)}</span>`;
+  } finally {
+    if (btn && document.body.contains(btn)) { btn.disabled = false; btn.textContent = original; }
+  }
+}
+
+// First short summary for dashboard chats that don't have one yet (one at a time).
+let autoRunning = false;
+async function autoSummarizeMissing() {
+  if (autoRunning) return;
+  autoRunning = true;
+  try {
+    for (const c of chats.filter((x) => x.selected && !x.summary && isListening(x) && x.total_count)) {
+      await summarize(c.rowid, null, 'short');
+    }
+  } finally { autoRunning = false; }
+}
+
+function refreshCard(rowid) {
+  const c = chats.find((x) => x.rowid === rowid);
+  if (!c) return;
+  for (const el of [document.getElementById(`card-${rowid}`), document.getElementById(`dcard-${rowid}`)]) {
+    if (!el) continue;
+    const wasOpen = el.classList.contains('is-open');
+    el.outerHTML = renderCard(c, { expanded: wasOpen, inDrawer: el.id.startsWith('d') });
+  }
+}
+
+async function setFlag(rowid, key, on) {
+  const c = chats.find((x) => x.rowid === rowid);
+  if (!c) return;
+  const f = flagsOf(c);
+  if (on) f.add(key); else f.delete(key);
+  const r = await api(`/api/chats/${rowid}/mode`, { method: 'POST', body: JSON.stringify({ flags: [...f] }) });
+  c.listen_mode = r.listen_mode;
+  renderChatList(); populateAskScope();
+  // refresh the card(s) in place without collapsing them
+  for (const el of [document.getElementById(`card-${rowid}`), document.getElementById(`dcard-${rowid}`)]) {
+    if (!el) continue;
+    const wasOpen = el.classList.contains('is-open');
+    el.outerHTML = renderCard(c, { expanded: wasOpen, inDrawer: el.id.startsWith('d') });
+  }
+}
+
+/* ---------- sub panels (unchanged behaviour) ---------- */
+function showPanel(rowid, name) {
+  toggleCard(rowid, true);
+  const box = part(rowid, name);
+  const wasHidden = box.classList.contains('hidden');
+  box.classList.toggle('hidden');
+  closeMenus();
+  return wasHidden;
+}
+
+async function toggleMessages(rowid) {
+  if (!showPanel(rowid, 'msgs')) return;
+  const box = part(rowid, 'msgs');
+  box.innerHTML = '<div class="meta">טוען...</div>';
+  try {
+    const msgs = await api(`/api/chats/${rowid}/messages?limit=150`);
+    box.innerHTML = `<div class="messages">${msgs.map((m) => {
+      const media = m.media_path
+        ? (m.type === 'voice'
+          ? `<audio controls preload="none" src="/media/${m.media_path.split('/').map(encodeURIComponent).join('/')}"></audio>`
+          : `<img loading="lazy" alt="" src="/media/${m.media_path.split('/').map(encodeURIComponent).join('/')}">`)
+        : '';
+      return `<div class="msg ${m.from_me ? 'me' : ''}"><b>${esc(m.sender_name)}</b><time>${fmtTime(m.timestamp)}</time><br>${esc(m.content)}${media}</div>`;
+    }).join('') || '<div class="meta">אין הודעות</div>'}</div>`;
+    const list = box.querySelector('.messages');
+    list.scrollTop = list.scrollHeight;
+  } catch (err) {
+    box.innerHTML = `<span class="error-text">שגיאה: ${esc(err.message)}</span>`;
+  }
+}
+
+function renderProfileBox(rowid, r) {
+  const box = part(rowid, 'profile');
+  const refreshBtn = `<button class="btn btn-sm" data-profile-refresh="${rowid}">↻ למד מחדש</button>`;
+  if (!r.members.length) {
+    box.innerHTML = `<div class="meta" style="margin-bottom:8px">עדיין לא נלמד כלום על הקבוצה הזו (הלמידה רצה אוטומטית בלילה).</div>${refreshBtn}`;
+    return;
+  }
+  const updatedTs = r.members.find((m) => m.updated_at)?.updated_at;
+  box.innerHTML = `<div class="meta" style="margin-bottom:6px">${updatedTs ? `עודכן ${ago(updatedTs)} · ` : ''}${r.members.length} משתתפים</div>` +
+    r.members.map((m) => `
+      <div class="member"><b>${esc(m.sender_name)}</b> <span class="meta">${m.count} הודעות · ${esc(m.first_seen)}–${esc(m.last_seen)}</span>
+        <div class="muted">${m.profile ? esc(m.profile) : '<span class="meta">מעט מדי הודעות לפרופיל.</span>'}</div></div>`).join('') +
+    `<div style="margin-top:8px">${refreshBtn}</div>`;
+}
+
+async function toggleProfile(rowid) {
+  if (!showPanel(rowid, 'profile')) return;
+  const box = part(rowid, 'profile');
+  box.innerHTML = '<div class="meta">טוען...</div>';
+  try { renderProfileBox(rowid, await api(`/api/chats/${rowid}/profile`)); }
+  catch (err) { box.innerHTML = `<span class="error-text">שגיאה: ${esc(err.message)}</span>`; }
+}
+
+async function refreshProfile(rowid, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = 'לומד...'; }
+  try { renderProfileBox(rowid, await api(`/api/chats/${rowid}/profile`, { method: 'POST', body: JSON.stringify({ hours: 0 }) })); }
+  catch (err) { part(rowid, 'profile').innerHTML = `<span class="error-text">שגיאה: ${esc(err.message)}</span>`; }
+}
+
+async function toggleChat(rowid) {
+  if (!showPanel(rowid, 'chatbox')) return;
+  try {
+    const { notes } = await api(`/api/chats/${rowid}/notes`);
+    part(rowid, 'notes').value = notes || '';
+  } catch { /* ignore */ }
+  await loadQaHistory(rowid);
+}
+
+async function loadQaHistory(rowid) {
+  const hist = part(rowid, 'qa');
+  hist.innerHTML = '<div class="meta">טוען היסטוריה...</div>';
+  try {
+    const turns = await api(`/api/chats/${rowid}/qa?limit=30`);
+    hist.innerHTML = turns.length
+      ? turns.map((t) => `<div class="bubble ${t.role === 'user' ? 'user' : 'assistant'}">${esc(t.content)}</div>`).join('')
+      : '<div class="meta">עדיין אין שיחה עם הבוט על השיחה הזו.</div>';
+    hist.scrollTop = hist.scrollHeight;
+  } catch (err) {
+    hist.innerHTML = `<span class="error-text">שגיאה: ${esc(err.message)}</span>`;
+  }
+}
+
+async function saveNotes(rowid, btn) {
+  const notes = part(rowid, 'notes').value;
+  btn.disabled = true; const original = btn.textContent; btn.textContent = 'שומר...';
+  try {
+    await api(`/api/chats/${rowid}/notes`, { method: 'POST', body: JSON.stringify({ notes }) });
+    btn.textContent = 'נשמר ✓';
+  } catch {
+    btn.textContent = 'שגיאה';
+  } finally {
+    setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 1500);
+  }
+}
+
+async function sendQa(rowid) {
+  const input = part(rowid, 'qa-input');
+  const question = input.value.trim();
+  if (!question) return;
+  const hist = part(rowid, 'qa');
+  const btn = cardEl(rowid).querySelector(`[data-qa-send="${rowid}"]`);
+  if (hist.querySelector('.meta')) hist.innerHTML = '';
+  hist.insertAdjacentHTML('beforeend', `<div class="bubble user">${esc(question)}</div>`);
+  input.value = '';
+  hist.scrollTop = hist.scrollHeight;
+  if (btn) { btn.disabled = true; btn.textContent = 'חושב...'; }
+  try {
+    const r = await api(`/api/chats/${rowid}/qa`, { method: 'POST', body: JSON.stringify({ question }) });
+    hist.insertAdjacentHTML('beforeend', `<div class="bubble assistant">${esc(r.answer)}</div>`);
+  } catch (err) {
+    hist.insertAdjacentHTML('beforeend', `<div class="bubble error">שגיאה: ${esc(err.message)}</div>`);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'שלח'; }
+    hist.scrollTop = hist.scrollHeight;
+  }
+}
+
+/* ===================== ask ===================== */
+async function askQuestion() {
+  const input = $('#askInput');
+  const question = input.value.trim();
+  if (!question) return;
+  const btn = $('#askBtn');
+  const out = $('#askAnswer');
+  btn.disabled = true; btn.textContent = 'חושב...';
+  out.innerHTML = '<span class="meta">מחפש בהודעות...</span>';
+  try {
+    const rowid = $('#askScope').value;
+    const hours = Number($('#askHours').value);
+    const r = await api('/api/ask', { method: 'POST', body: JSON.stringify({ question, rowid: rowid || undefined, hours }) });
+    out.innerHTML = `<div class="meta" style="margin-bottom:6px">${esc(r.scope || '')}${r.count ? ` · ${r.count} הודעות נבדקו` : ''}${r.provider ? ` · ${r.provider === 'מקומי' ? '💻 מודל מקומי' : `☁ ${esc(r.provider)}`}` : ''}</div><div>${esc(r.answer)}</div>`;
+  } catch (err) {
+    out.innerHTML = `<span class="error-text">שגיאה: ${esc(err.message)}</span>`;
+  } finally {
+    btn.disabled = false; btn.textContent = 'שאל';
+  }
+}
+
+/* ===================== ★ Partner card - never disappears ===================== */
+let loveLast = null;      // last good answer - shown again if a check fails
+let loveBusy = false;
+async function loadLove(force = false) {
+  if (loveBusy) return;
+  loveBusy = true;
+  const box = $('#love');
+  const btn = box.querySelector('[data-love-refresh]');
+  if (force && btn) { btn.disabled = true; btn.classList.add('spinning'); }
+  try {
+    renderLove(await api(force ? '/api/love/refresh' : '/api/love', force ? { method: 'POST', body: '{}' } : {}));
+  } catch (err) {
+    // Keep showing what we already know; only add a small note.
+    if (loveLast) renderLove({ ...loveLast, stale_error: `לא הצלחתי לבדוק עכשיו (${err.message}) - מוצג המידע האחרון` });
+    else renderLove({ configured: true, chat_name: '', wants: [], tasks: [], lists: [], learned: [], stale_error: `לא הצלחתי לבדוק עכשיו: ${err.message}` });
+  } finally { loveBusy = false; }
+}
+
+function loveCheckItem(text, extra = '') {
+  return `<li><label><input type="checkbox" class="check" data-love-done="${esc(text)}"><span>${esc(text)}${extra}</span></label></li>`;
+}
+
+function renderLove(r) {
+  const box = $('#love');
+  // The partner card is an optional module: it appears only after a chat was chosen with "💛 בן/בת הזוג שלי".
+  $('#loveBlock').classList.toggle('hidden', !r.configured);
+  document.querySelectorAll('[data-love-nav]').forEach((a) => a.classList.toggle('hidden', !r.configured));
+  if (!r.configured) {
+    box.innerHTML = `<div class="love-top"><div class="heart3d"><div class="ring"></div><div class="ring r2"></div><div class="core">💗</div></div>
+      <div class="love-name"><h2>בן/בת הזוג</h2><div class="meta">לא נבחרה שיחה. ב"כל השיחות" לחץ על האייקונים ליד השיחה ובחר "💛 בן/בת הזוג שלי".</div></div></div>`;
+    return;
+  }
+  if (!r.stale_error) loveLast = r;
+  const last = r.last_message;
+  const wants = r.wants || [];
+  const tasks = r.tasks || [];
+  const lists = r.lists || [];
+  const learned = r.learned || [];
+  const open = wants.length + tasks.length;
+  const needs = Boolean(r.needs_reply);
+  box.innerHTML = `
+    <div class="love-top">
+      <div class="heart3d" aria-hidden="true"><div class="ring"></div><div class="ring r2"></div><div class="core">💗</div></div>
+      <div class="love-name">
+        <h2>${esc(r.chat_name || 'בן/בת הזוג')}</h2>
+        <div class="meta">${last ? `הודעה אחרונה ${ago(last.timestamp)} · ` : ''}${r.computed_at ? `נבדק ${ago(r.computed_at)}` : ''}</div>
+      </div>
+      <div class="love-actions">
+        <span class="love-state ${needs ? 'waiting' : ''}">${needs ? '↩ מחכה לתשובה ממך' : open ? `${open} דברים פתוחים` : '✓ הכל סגור'}</span>
+        <button class="btn btn-ghost btn-icon" data-love-refresh title="בדוק שוב">↻</button>
+        ${r.chat_rowid ? `<button class="btn btn-sm btn-love" data-open="${r.chat_rowid}">לשיחה</button>` : ''}
+      </div>
+    </div>
+    ${needs ? `<div class="love-reply"><div>
+        <b>היא מחכה לתשובה${r.reply_about ? `: ${esc(r.reply_about)}` : ''}</b>
+        ${last && !last.from_me ? `<div class="quote">"${esc(last.text)}" · ${ago(last.timestamp)}</div>` : ''}
+        ${r.suggested_reply ? `<div class="sugg"><span class="meta">הצעה לתשובה:</span><br><span data-reply-text>${esc(r.suggested_reply)}</span></div>` : ''}
+      </div>${r.suggested_reply ? '<button class="btn btn-sm" data-copy-reply>📋 העתק</button>' : ''}</div>` : ''}
+    <div class="love-grid">
+      <div class="love-tile"><h4>💝 מה היא רוצה ממך ${wants.length ? `<span class="badge badge-new">${wants.length}</span>` : ''}<span class="meta" style="margin-inline-start:auto">✓ = ביצעתי</span></h4>
+        ${wants.length ? `<ul class="love-checks">${wants.map((w) => loveCheckItem(w)).join('')}</ul>` : '<div class="love-empty">✓ אין בקשות פתוחות</div>'}</div>
+      <div class="love-tile"><h4>✅ משימות ממנה ${tasks.length ? `<span class="badge badge-new">${tasks.length}</span>` : ''}</h4>
+        ${tasks.length ? `<ul class="love-checks">${tasks.map((t) => loveCheckItem(t.text, t.due ? `<span class="due">${esc(t.due)}${t.due_time ? ` · ${esc(t.due_time)}` : ''}</span>` : '')).join('')}</ul>` : '<div class="love-empty">✓ אין משימות</div>'}</div>
+      <div class="love-tile lists"><h4>📋 רשימות שהיא שלחה ${lists.length ? `<span class="badge">${lists.length}</span>` : ''}</h4>
+        ${lists.length ? lists.map((l) => `<div class="love-list"><div class="l-head"><span>${esc(l.title)} <span class="meta">· ${l.items.length}</span></span>
+            <label class="flag" title="סיימתי עם הרשימה - להסתיר"><input type="checkbox" data-love-done="${esc(`רשימה: ${l.title}`)}">סיימתי</label></div>
+          <ul class="list-items">${l.items.map((it) => `<li>${esc(it)}</li>`).join('')}</ul></div>`).join('') : '<div class="love-empty">אין רשימות פתוחות</div>'}</div>
+    </div>
+    ${learned.length ? `<div class="love-learned"><span class="meta">🧠 הבוט למד עליה:</span>${learned.map((x) => `<span class="chip">${esc(x)}</span>`).join('')}</div>` : ''}
+    ${r.stale_error ? `<div class="love-warn">⚠ ${esc(r.stale_error)}</div>` : ''}
+    ${r.parse_error ? `<div class="love-warn">⚠ ${esc(r.parse_error)} - נסה ↻</div>` : ''}`;
+}
+
+/* ===================== events ===================== */
+function conflictHtml(ev) {
+  return (ev.conflicts || []).map((c) => c.kind === 'overlap'
+    ? `<div class="conflict">⛔ מתנגש ביומן: <b>${esc(c.title)}</b> ${esc(c.start)}–${esc(c.end)}</div>`
+    : `<div class="conflict soft">ביומן באותו יום: ${esc(c.title)}${c.all_day ? ' (כל היום)' : ` ${esc(c.start)}–${esc(c.end)}`}</div>`).join('');
+}
+const missingOf = (ev) => [!ev.start_time && 'שעה', !ev.location && 'מיקום'].filter(Boolean);
+
+function eventMenu(ev) {
+  return `<div class="menu-wrap"><button class="btn btn-ghost btn-icon" data-menu-toggle title="פעולות">⋯</button>
+    <div class="menu">
+      <a href="${esc(ev.gcal)}" target="_blank" rel="noopener noreferrer">➕ הוסף ל-Google Calendar</a>
+      <a href="/api/events/${ev.id}/ics">📎 הורד קובץ ליומן</a>
+      <button data-edit="${ev.id}">✏️ השלם / ערוך פרטים</button>
+      ${ev.status !== 'added' ? `<button data-ev="${ev.id}" data-status="added">✓ סמן שהוספתי</button>` : ''}
+      <hr><button class="danger" data-ev="${ev.id}" data-status="ignored">✕ לא רלוונטי</button>
+    </div></div>`;
+}
+
+async function loadEvents() {
+  eventsCache = await api('/api/events?days=14');
+  renderEvents();
+  renderTodos();
+}
+
+function renderEvents() {
+  const list = eventsCache;
+  if (!list.length) { $('#events').innerHTML = '<div class="empty" style="grid-column:1/-1">אין אירועים ב-14 הימים הקרובים.</div>'; return; }
+  const [hero, ...rest] = list;
+  const miss = missingOf(hero);
+  const heroHtml = `
+    <article class="card event-hero tone-ocean ${hero.conflicts?.some((c) => c.kind === 'overlap') ? 'is-alert' : ''}">
+      <div class="row" style="justify-content:space-between">
+        <span class="rel">${esc(relLabel(hero.date))} · הבא בתור</span>${eventMenu(hero)}
+      </div>
+      <h3 class="h-display">${esc(hero.title)}</h3>
+      <div class="event-facts">
+        <span>🗓 ${esc(hero.when)}</span>
+        ${hero.location ? `<span>📍 ${esc(hero.location)}</span>` : ''}
+        ${hero.chat_name ? `<span>💬 ${esc(hero.chat_name)}</span>` : ''}
+        ${hero.status === 'added' ? '<span class="chip chip-success">✓ ביומן</span>' : ''}
+      </div>
+      ${hero.notes ? `<div class="muted" style="margin-top:8px">${esc(hero.notes)}</div>` : ''}
+      ${conflictHtml(hero)}
+      <div class="event-actions">
+        ${miss.length
+          ? `<button class="btn btn-primary" data-edit="${hero.id}">השלם ${miss.join(' ו')}</button>
+             <a class="btn" href="${esc(hero.gcal)}" target="_blank" rel="noopener noreferrer">➕ ליומן</a>`
+          : hero.status !== 'added'
+            ? `<a class="btn btn-primary" href="${esc(hero.gcal)}" target="_blank" rel="noopener noreferrer">➕ הוסף ליומן</a>
+               <button class="btn" data-ev="${hero.id}" data-status="added">✓ הוספתי</button>`
+            : `<button class="btn" data-edit="${hero.id}">✏️ ערוך</button>`}
+      </div>
+    </article>`;
+  const restHtml = rest.length ? `<div class="card card-pad"><div class="event-list">${rest.map((ev) => {
+    const m = missingOf(ev);
+    const overlap = ev.conflicts?.some((c) => c.kind === 'overlap');
+    return `<div>
+      <div class="event-row ${ev.status === 'added' ? 'is-added' : ''}">
+        <span class="rel">${esc(relLabel(ev.date))}</span>
+        <div style="min-width:0">
+          <div class="ev-title">${esc(ev.title)}</div>
+          <div class="ev-sub">${esc(ev.start_time || 'ללא שעה')}${ev.location ? ` · ${esc(ev.location)}` : ''}${ev.chat_name ? ` · ${esc(ev.chat_name)}` : ''}</div>
+          ${overlap ? '<div class="flag">⛔ מתנגש ביומן</div>' : m.length ? `<div class="flag warn">חסר: ${m.join(', ')}</div>` : ''}
+        </div>
+        ${eventMenu(ev)}
+      </div>
+      ${overlap ? conflictHtml({ conflicts: ev.conflicts.filter((c) => c.kind === 'overlap') }) : ''}
+    </div>`;
+  }).join('')}</div></div>` : '';
+  $('#events').innerHTML = heroHtml + restHtml;
+}
+
+function renderTodos() {
+  const items = [];
+  for (const ev of eventsCache) {
+    const overlap = (ev.conflicts || []).find((c) => c.kind === 'overlap');
+    if (overlap) items.push({ cls: 'danger', ico: '⛔', title: `${ev.title} מתנגש ביומן`, sub: `${relLabel(ev.date)} · מול "${overlap.title}" ${overlap.start}`, action: `<button class="btn btn-sm" data-edit="${ev.id}">בדוק</button>` });
+  }
+  for (const ev of eventsCache) {
+    const m = missingOf(ev);
+    if (m.length && ev.status === 'pending') items.push({ cls: '', ico: '✏️', title: ev.title, sub: `${relLabel(ev.date)} · חסר ${m.join(' ו')}`, action: `<div class="row"><button class="btn btn-sm" data-edit="${ev.id}">השלם</button><a class="btn btn-sm" href="${esc(ev.gcal)}" target="_blank" rel="noopener noreferrer" title="הוסף ליומן">➕ ליומן</a></div>` });
+  }
+  const pendingCount = eventsCache.filter((e) => e.status === 'pending' && !missingOf(e).length).length;
+  if (pendingCount) items.push({ cls: '', ico: '🗓', title: `${pendingCount} אירועים עוד לא ביומן`, sub: 'מוכנים להוספה בלחיצה', action: '<button class="btn btn-sm" data-scroll-events>הצג</button>' });
+  $('#todos').innerHTML = items.length
+    ? items.slice(0, 6).map((t) => `<div class="todo ${t.cls}"><span class="ico">${t.ico}</span><div class="todo-main"><b>${esc(t.title)}</b><span class="meta">${esc(t.sub)}</span></div>${t.action}</div>`).join('')
+    : '<div class="empty">✓ אין אירועים שדורשים פעולה</div>';
+}
+
+function openEdit(id) {
+  const ev = eventsCache.find((e) => e.id === id);
+  if (!ev) return;
+  closeMenus();
+  const form = $('#editForm');
+  form.dataset.editForm = String(id);
+  for (const k of ['title', 'date', 'start_time', 'end_time', 'location', 'notes']) form.elements[k].value = ev[k] || '';
+  $('#editGcal').href = ev.gcal;
+  $('#edit-msg').textContent = '';
+  $('#editDialog').showModal();
+  const empty = [...form.querySelectorAll('input')].find((i) => !i.value) || form.elements.title;
+  setTimeout(() => empty.focus(), 50);
+}
+
+async function submitEdit(form) {
+  const id = Number(form.dataset.editForm);
+  const data = Object.fromEntries(new FormData(form).entries());
+  const msg = $('#edit-msg');
+  msg.textContent = 'שומר...';
+  try {
+    const updated = await api(`/api/events/${id}`, { method: 'POST', body: JSON.stringify(data) });
+    msg.textContent = 'נשמר ✓';
+    $('#editGcal').href = updated.gcal;   // the calendar link now includes the new details
+    await loadEvents();
+    setTimeout(() => $('#editDialog').close(), 700);
+  } catch (err) {
+    msg.innerHTML = `<span class="error-text">${esc(err.message)}</span>`;
+  }
+}
+
+/* ===================== work chats ===================== */
+async function saveWork(form) {
+  const rowid = Number(form.dataset.workForm);
+  const msg = form.querySelector('[data-work-msg]');
+  const btn = form.querySelector('button');
+  btn.disabled = true;
+  msg.textContent = form.prefix.value.trim() ? 'קורא את כל השיחה ומעדכן אירועים...' : 'שומר...';
+  try {
+    const r = await api(`/api/chats/${rowid}/work`, { method: 'POST', body: JSON.stringify({ prefix: form.prefix.value }) });
+    const c = chats.find((x) => x.rowid === rowid);
+    if (c) c.event_prefix = r.prefix || null;
+    msg.textContent = r.prefix ? `✓ ${r.jobs} עבודות · ${r.added} חדשות · ${r.updated} עודכנו${r.cancelled ? ` · ${r.cancelled} בוטלו` : ''}` : '✓ נשמר';
+    loadEvents();
+  } catch (err) {
+    msg.innerHTML = `<span class="error-text">${esc(err.message)}</span>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+let galleryItems = [];
+const mediaUrl = (p) => '/media/' + p.split('/').map(encodeURIComponent).join('/');
+async function loadGallery(more = false) {
+  const chat = $('#galleryChat').value;
+  const before = more && galleryItems.length ? galleryItems[galleryItems.length - 1].timestamp : '';
+  const r = await api(`/api/gallery?kind=${galleryKind}${chat ? `&chat=${chat}` : ''}${before ? `&before=${before}` : ''}`);
+  galleryItems = more ? galleryItems.concat(r.items) : r.items;
+  const c = r.counts || {};
+  const labels = { people: `אנשים (${c.people || 0})`, other: `דברים (${c.other || 0})`, all: `הכל (${(c.people || 0) + (c.other || 0) + (c.unsorted || 0)})` };
+  document.querySelectorAll('#galleryKind button').forEach((b) => { b.textContent = labels[b.dataset.gkind]; b.classList.toggle('on', b.dataset.gkind === galleryKind); });
+  $('#gallery').innerHTML = galleryItems.length
+    ? galleryItems.map((m, i) => `<button class="g-item" data-g="${i}" title="${esc(m.chat_name || '')}"><img loading="lazy" alt="" src="${mediaUrl(m.media_path)}"><span class="g-cap">${esc(m.chat_name || '')} · ${fmtTime(m.timestamp)}</span></button>`).join('')
+    : '<div class="empty" style="grid-column:1/-1">אין עדיין תמונות כאן. תמונות נשמרות מצ׳אטים שמסומן בהם "תמונות".</div>';
+  $('#galleryMore').classList.toggle('hidden', r.items.length < 60);
+}
+function populateGalleryChats() {
+  const sel = $('#galleryChat');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">כל הצ׳אטים</option>' + chats.filter((c) => flagsOf(c).has('images')).map((c) => `<option value="${c.rowid}">${esc(chatLabel(c))}</option>`).join('');
+  sel.value = cur;
+}
+function openLightbox(i) {
+  const m = galleryItems[i];
+  if (!m) return;
+  $('#lbImg').src = mediaUrl(m.media_path);
+  $('#lbMeta').textContent = `${m.chat_name || ''} · ${m.sender_name || ''} · ${fmtTime(m.timestamp)}`;
+  $('#lbText').textContent = m.content || '';
+  $('#lbOpenChat').dataset.lbChat = m.chat_rowid || '';
+  $('#lightbox').showModal();
+}
+
+/* ===================== tasks ===================== */
+let tasksState = { open: [], suggested: [] };
+const ORIGIN = { manual: '', chat: 'מהצ׳אט', love: 'מבן/בת הזוג', unknown: 'ממספר לא שמור' };
+
+function countdownText(dueAt) {
+  let diff = dueAt - Math.floor(Date.now() / 1000);
+  const late = diff < 0;
+  diff = Math.abs(diff);
+  const d = Math.floor(diff / 86400), h = Math.floor((diff % 86400) / 3600), m = Math.floor((diff % 3600) / 60), sec = diff % 60;
+  const hms = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+  const txt = d ? `${d} ימ׳ ${hms}` : hms;
+  return { text: late ? `באיחור ${txt}` : `⏱ ${txt}`, cls: late ? 'late' : diff < 86400 ? 'soon' : '' };
+}
+function tickCountdowns() {
+  document.querySelectorAll('[data-due]').forEach((el) => {
+    const c = countdownText(Number(el.dataset.due));
+    el.textContent = c.text;
+    el.className = `countdown ${c.cls}`;
+  });
+}
+const dueLabel = (ts) => new Date(ts * 1000).toLocaleString('he-IL', { timeZone: TZ, weekday: 'short', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+async function loadTasks() {
+  tasksState = await api('/api/tasks');
+  renderTasks();
+}
+
+function renderTasks() {
+  const { open, suggested } = tasksState;
+  const nowS = Math.floor(Date.now() / 1000);
+  // Order: overdue first, then by deadline, then the ones without a deadline (newest first).
+  const sorted = open.slice().sort((a, b) => (a.due_at || Infinity) - (b.due_at || Infinity) || b.id - a.id);
+  const late = sorted.filter((t) => t.due_at && t.due_at < nowS).length;
+  $('#tasks').innerHTML = `
+    <div class="card-head"><div class="ttl"><span class="orb">✓</span><h3 class="h-card">משימות</h3>
+      ${open.length ? `<span class="badge badge-new">${open.length}</span>` : ''}${late ? `<span class="chip chip-danger">${late} באיחור</span>` : ''}</div>
+      <span class="meta">סמן ✓ כשסיימת</span></div>
+    <form class="task-add" id="taskForm" autocomplete="off">
+      <input class="field" name="text" placeholder="משימה חדשה..." maxlength="300">
+      <input class="field" type="datetime-local" name="due" title="דדליין (לא חובה)">
+      <button class="btn btn-primary" type="submit">הוסף</button>
+    </form>
+    ${sorted.length ? `<ul class="task-list">${sorted.map((t) => `
+      <li class="task ${t.due_at && t.due_at < nowS ? 'is-late' : ''}" id="task-${t.id}">
+        <input type="checkbox" class="check" data-task-done="${t.id}" title="בוצע">
+        <div style="min-width:0"><div class="t-text">${esc(t.text)}</div>
+          <div class="t-meta">${[ORIGIN[t.origin] && t.chat_name ? `${ORIGIN[t.origin]} · ${esc(t.chat_name)}` : '', t.due_at ? `עד ${dueLabel(t.due_at)}` : ''].filter(Boolean).join(' · ')}</div></div>
+        ${t.due_at ? `<span class="countdown" data-due="${t.due_at}"></span>` : '<span></span>'}
+        <button class="btn btn-ghost btn-icon t-x" data-task-dismiss="${t.id}" title="מחק">✕</button>
+      </li>`).join('')}</ul>` : '<div class="meta">אין משימות פתוחות 👌</div>'}
+    ${suggested.length ? `<details class="suggest" ${tasksSuggestOpen ? 'open' : ''}><summary>זוהו בצ׳אטים <span class="badge">${suggested.length}</span> - להוסיף לרשימה?</summary>
+      ${suggested.map((t) => `<div class="sug"><div style="min-width:0">${esc(t.text)}<div class="t-meta meta">${esc([ORIGIN[t.origin], t.chat_name].filter(Boolean).join(' · '))}${t.due_at ? ` · עד ${dueLabel(t.due_at)}` : ''}</div></div>
+        <button class="btn btn-sm" data-task-add-sug="${t.id}">＋ הוסף</button>
+        <button class="btn btn-ghost btn-icon" data-task-dismiss="${t.id}" title="לא רלוונטי">✕</button></div>`).join('')}
+      <div class="task-tools"><button class="btn btn-sm" data-task-sug-all="open">＋ הוסף הכל</button><button class="btn btn-ghost btn-sm" data-task-sug-all="dismissed">נקה הכל</button></div>
+    </details>` : ''}`;
+  tickCountdowns();
+  updateNavCounts();
+}
+let tasksSuggestOpen = false;
+
+// "YYYY-MM-DDTHH:MM" as Asia/Jerusalem wall-clock time -> unix seconds (DST-correct)
+function israelLocalToUnix(value) {
+  const [d, t] = value.split('T');
+  const [y, mo, da] = d.split('-').map(Number);
+  const [h, mi] = (t || '23:59').split(':').map(Number);
+  const offset = (ms) => {
+    const p = new Intl.DateTimeFormat('en-US', { timeZone: TZ, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).formatToParts(new Date(ms));
+    const g = (k) => Number(p.find((x) => x.type === k).value);
+    return Date.UTC(g('year'), g('month') - 1, g('day'), g('hour'), g('minute')) - ms;
+  };
+  const guess = Date.UTC(y, mo - 1, da, h, mi);
+  let utc = guess - offset(guess);
+  utc = guess - offset(utc);
+  return Math.floor(utc / 1000);
+}
+
+async function addTask(form) {
+  const text = form.text.value.trim();
+  if (!text) { form.text.focus(); return; }
+  let due_at = null;
+  if (form.due.value) {
+    due_at = israelLocalToUnix(form.due.value); // always Israel time, even if the phone/PC is set elsewhere
+  }
+  await api('/api/tasks', { method: 'POST', body: JSON.stringify({ text, due_at }) });
+  await loadTasks();
+  toast('✓ המשימה נוספה');
+  $('#taskForm input[name=text]').focus();
+}
+
+async function completeTask(id, box) {
+  const li = document.getElementById(`task-${id}`);
+  if (li) li.classList.add('leaving');
+  try {
+    await api(`/api/tasks/${id}`, { method: 'POST', body: JSON.stringify({ status: 'done' }) });
+    setTimeout(() => { tasksState.open = tasksState.open.filter((t) => t.id !== id); renderTasks(); toast('✓ כל הכבוד'); }, 260);
+  } catch {
+    if (li) li.classList.remove('leaving');
+    box.checked = false;
+  }
+}
+
+/* ===================== numbers not saved in the phone ===================== */
+async function loadUnknown(force = false) {
+  const box = $('#unknown');
+  let r;
+  try {
+    r = await api(force ? '/api/unknown/refresh' : '/api/unknown', force ? { method: 'POST', body: '{}' } : {});
+  } catch (err) {
+    box.innerHTML = `<div class="card-head"><div class="ttl"><span class="orb ocean">☎</span><h3 class="h-card">מספרים לא שמורים</h3></div></div><span class="error-text">שגיאה: ${esc(err.message)}</span>`;
+    return;
+  }
+  const waiting = r.people.filter((p) => p.needs_reply).length;
+  box.innerHTML = `
+    <div class="card-head" style="margin-bottom:6px"><div class="ttl"><span class="orb ocean">☎</span><h3 class="h-card">מספרים לא שמורים</h3>
+      ${waiting ? `<span class="badge badge-new" title="מחכים לתשובה">${waiting}</span>` : ''}</div>
+      <div class="row"><span class="meta">${r.computed_at ? `נבדק ${ago(r.computed_at)}` : ''}</span>
+      <button class="btn btn-ghost btn-icon" data-unknown-refresh title="בדוק שוב">↻</button></div></div>
+    ${r.people.length ? r.people.map((p) => `
+      <div class="person">
+        <div class="p-head"><b>${esc(p.name)}</b>${p.needs_reply ? '<span class="chip chip-brand">מחכה לתשובה</span>' : ''}
+          <button class="btn btn-ghost btn-sm" data-open="${p.rowid}">לשיחה</button></div>
+        ${p.who ? `<div class="meta">${esc(p.who)}</div>` : ''}
+        ${p.wants ? `<div class="p-wants">${esc(p.wants)}</div>` : ''}
+        ${p.tasks.length ? `<ul class="list-clean tasks">${p.tasks.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
+        <div class="meta">${p.count} הודעות · אחרונה ${ago(p.last_at)}</div>
+      </div>`).join('') : '<div class="meta">אין פניות ממספרים לא שמורים בשבוע האחרון.</div>'}
+    ${r.parse_error ? `<div class="meta error-text">${esc(r.parse_error)} - נסה ↻</div>` : ''}`;
+}
+
+/* ===================== memory: daily questions + what the bot knows ===================== */
+let memState = { questions: [], facts: [], groups: [] };
+const ABOUT = { person: '👤 אדם', group: '👥 קבוצה', word: '💬 מילה', action: '✅ פעולה', fact: '📌 עובדה', learned: '🧠 נלמד' };
+let peopleOpen = false;
+async function loadMemory() {
+  memState = await api('/api/memory');
+  renderQuestions();
+  renderKnowledge();
+  updateNavCounts();
+}
+function renderQuestions() {
+  const { questions, questions_hour: hour } = memState;
+  $('#memMeta').textContent = `שאלות חדשות כל ערב ב-${hour ?? 21}:00 · גם בטלגרם (ענה בתגובה)`;
+  $('#questions').innerHTML = `
+    <div class="card-head" style="margin-bottom:12px"><div class="ttl"><span class="orb">?</span><h3 class="h-card">שאלות היום</h3>
+      ${questions.length ? `<span class="badge badge-new">${questions.length}</span>` : ''}</div></div>
+    ${questions.length ? `<div class="q-list">${questions.map((q) => `
+      <form class="q" data-q-form="${q.id}">
+        <div class="row" style="flex-wrap:wrap;gap:6px">${q.chat_name ? `<span class="chip chip-brand">${esc(q.chat_name)}</span>` : ''}<span class="chip">${ABOUT[q.about] || ''}${q.subject ? ` · ${esc(q.subject)}` : ''}</span></div>
+        <div class="q-text">${esc(q.question)}</div>
+        <div class="q-row">
+          <textarea class="field" name="answer" rows="1" placeholder="התשובה שלך (משפט אחד מספיק)..."></textarea>
+          <button class="btn btn-primary btn-sm" type="submit">שמור</button>
+          <button class="btn btn-ghost btn-sm" type="button" data-q-skip="${q.id}">דלג</button>
+        </div>
+      </form>`).join('')}</div>`
+    : `<div class="done-all"><span class="orb mint">✓</span><b>אין שאלות פתוחות</b><div class="meta">כל ערב הבוט עובר על מה שנכתב היום ושואל אותך 3-4 שאלות קצרות - מי זה מי, מה פירוש מילה, מה דורש ממך פעולה. כל תשובה נשמרת ומשפרת את הסיכומים, האירועים והמשימות.</div></div>`}`;
+}
+function renderKnowledge() {
+  const { facts, groups } = memState;
+  const chatOptions = chats.filter((c) => isListening(c)).map((c) => `<option value="${c.rowid}">${esc(chatLabel(c))}</option>`).join('');
+  $('#knowledge').innerHTML = `
+    <div class="card-head" style="margin-bottom:12px"><div class="ttl"><span class="orb mint">📚</span><h3 class="h-card">מה הבוט כבר יודע</h3>
+      <span class="badge">${facts.length + groups.length}</span></div></div>
+    <form class="mem-add" id="factForm" autocomplete="off">
+      <select class="select" name="rowid" title="על איזו שיחה (לא חובה)"><option value="">כללי</option>${chatOptions}</select>
+      <input class="field" name="text" maxlength="600" placeholder='למד את הבוט, למשל: "דני" = האח של רותי'>
+      <button class="btn btn-sm" type="submit">＋ הוסף</button>
+    </form>
+    <div class="facts" style="margin-top:8px">
+      ${facts.length ? facts.map((f) => `<div class="fact"><span>${ABOUT[f.about]?.split(' ')[0] || '•'}</span><div class="f-main">
+          ${f.chat_name ? `<span class="meta">${esc(f.chat_name)} · </span>` : ''}${f.subject ? `<b>${esc(f.subject)}:</b> ` : ''}${esc(f.answer)}
+          ${f.question ? `<div class="f-q">שאלה: ${esc(f.question)}</div>` : ''}</div>
+          <button class="btn btn-ghost btn-icon t-x" data-fact-del="${f.id}" title="מחק מהזיכרון">✕</button></div>`).join('')
+        : '<div class="meta" style="padding:8px 0">עדיין אין עובדות. ענה על שאלות או הוסף בעצמך.</div>'}
+      ${(memState.people || []).length ? `<details class="suggest" style="margin-top:8px" ${peopleOpen ? 'open' : ''} data-people-details><summary>אנשים - מה למדתי עליהם מכל השיחות <span class="badge">${memState.people.length}</span></summary>
+        ${memState.people.map((p) => `<div class="person-card"><div class="row" style="justify-content:space-between"><b>${esc(p.name || p.id)}</b>
+            <span class="row"><span class="meta">${p.message_count || 0} הודעות</span><button class="btn btn-ghost btn-sm" data-person-learn="${esc(p.id)}">🧠 למד</button></span></div>
+          ${p.profile ? `<div class="p-prof">${esc(p.profile)}</div>` : '<div class="meta">עוד לא נלמד (קורה בלילה, או לחץ 🧠 למד)</div>'}
+          ${p.facts.map((f) => `<div class="fact"><span>${ABOUT[f.about]?.split(' ')[0] || '•'}</span><div class="f-main">${esc(f.answer)}${f.question ? `<div class="f-q">שאלה: ${esc(f.question)}</div>` : ''}</div>
+            <button class="btn btn-ghost btn-icon t-x" data-fact-del="${f.id}" title="מחק מהזיכרון">✕</button></div>`).join('')}
+          <form class="row" data-person-fact="${esc(p.id)}" autocomplete="off"><input class="field" name="text" maxlength="600" placeholder="משהו שכדאי שהבוט יידע על ${esc(p.name || '')}..."><button class="btn btn-sm" type="submit">＋</button></form>
+        </div>`).join('')}</details>` : ''}
+      ${groups.length ? `<details class="suggest" style="margin-top:8px"><summary>אופי השיחות שנלמד <span class="badge">${groups.length}</span></summary>
+        ${groups.map((g) => `<div class="fact"><span>${g.is_group ? '👥' : '👤'}</span><div class="f-main"><b>${esc(g.name || '')}</b>
+          <div class="muted" style="white-space:pre-wrap">${esc(g.group_profile)}</div></div></div>`).join('')}</details>` : ''}
+    </div>`;
+}
+async function answerQuestion(form) {
+  const answer = form.answer.value.trim();
+  if (!answer) { form.answer.focus(); return; }
+  const btn = form.querySelector('button[type=submit]');
+  btn.disabled = true;
+  try {
+    await api(`/api/memory/questions/${form.dataset.qForm}`, { method: 'POST', body: JSON.stringify({ answer }) });
+    toast('✓ נשמר בזיכרון - תודה!');
+    await loadMemory();
+  } catch (err) { toast(err.message, true); btn.disabled = false; }
+}
+async function addFact(form) {
+  const text = form.text.value.trim();
+  if (!text) { form.text.focus(); return; }
+  try {
+    await api('/api/memory/facts', { method: 'POST', body: JSON.stringify({ text, rowid: form.rowid.value || null }) });
+    toast('✓ נשמר בזיכרון');
+    await loadMemory();
+  } catch (err) { toast(err.message, true); }
+}
+function updateNavCounts() {
+  const n = memState.questions?.length || 0;
+  document.querySelectorAll('[data-q-count]').forEach((el) => { el.textContent = n; el.classList.toggle('hidden', !n); });
+}
+
+/* ===================== wiring ===================== */
+document.addEventListener('change', async (e) => {
+  const ld = e.target.closest('input[data-love-done]');
+  if (ld) {
+    const li = ld.closest('li, .love-list'); if (li) li.classList.add('leaving');
+    try {
+      const r = await api('/api/love/done', { method: 'POST', body: JSON.stringify({ text: ld.dataset.loveDone }) });
+      setTimeout(() => { renderLove(r); toast('✓ סומן כבוצע'); }, 260);
+    } catch (err) { if (li) li.classList.remove('leaving'); ld.checked = false; toast(err.message, true); }
+    return;
+  }
+  const lo = e.target.closest('input[data-local-only]');
+  if (lo) {
+    const rowid = Number(lo.dataset.localOnly);
+    await api(`/api/chats/${rowid}/local`, { method: 'POST', body: JSON.stringify({ on: lo.checked }) });
+    const c = chats.find((x) => x.rowid === rowid); if (c) c.local_only = lo.checked ? 1 : 0;
+    toast(lo.checked ? '🔒 השיחה תעובד רק במחשב' : '☁ השיחה יכולה להיעזר בענן');
+    return;
+  }
+  const ai = e.target.closest('input[data-archive-images]');
+  if (ai) {
+    const rowid = Number(ai.dataset.archiveImages);
+    await api(`/api/chats/${rowid}/archive-images`, { method: 'POST', body: JSON.stringify({ on: ai.checked }) });
+    const c = chats.find((x) => x.rowid === rowid); if (c) c.archive_images = ai.checked ? 1 : 0;
+    toast(ai.checked ? '🗄️ תמונות מהשיחה יישמרו בארכיון ל-30 יום' : 'התמונות מהשיחה לא יישמרו בארכיון');
+    return;
+  }
+  const flag = e.target.closest('input[data-flag]');
+  if (flag) { setFlag(Number(flag.dataset.flagRowid), flag.dataset.flag, flag.checked); return; }
+  const done = e.target.closest('input[data-task-done]');
+  if (done) { completeTask(Number(done.dataset.taskDone), done); return; }
+  const cb = e.target.closest('input[data-rowid]');
+  if (!cb) return;
+  const rowid = Number(cb.dataset.rowid);
+  await api(`/api/chats/${rowid}/select`, { method: 'POST', body: JSON.stringify({ selected: cb.checked }) });
+  await loadChats();
+});
+
+document.addEventListener('submit', (e) => {
+  if (e.target.id === 'taskForm') { e.preventDefault(); addTask(e.target); return; }
+  if (e.target.dataset.workForm) { e.preventDefault(); saveWork(e.target); return; }
+  if (e.target.dataset.qForm) { e.preventDefault(); answerQuestion(e.target); return; }
+  if (e.target.id === 'factForm') { e.preventDefault(); addFact(e.target); return; }
+  if (e.target.dataset.personFact) {
+    e.preventDefault();
+    const f = e.target; const text = f.text.value.trim(); if (!text) return;
+    api(`/api/people/${encodeURIComponent(f.dataset.personFact)}/fact`, { method: 'POST', body: JSON.stringify({ text }) })
+      .then(() => { peopleOpen = true; toast('✓ נשמר בזיכרון של האדם'); return loadMemory(); }).catch((err) => toast(err.message, true));
+    return;
+  }
+  const form = e.target.closest('[data-edit-form]');
+  if (!form) return;
+  e.preventDefault();
+  submitEdit(form);
+});
+
+document.addEventListener('click', async (e) => {
+  const t = e.target.closest('button, [data-toggle-card]');
+  if (!t) return;
+  const d = t.dataset;
+  if (d.toggleCard) { if (!e.target.closest('button, .menu-wrap')) toggleCard(Number(d.toggleCard)); return; }
+  if (d.open) openChat(Number(d.open));
+  if (d.closeDrawer !== undefined) closeDrawer();
+  if (d.sumFull) summarize(Number(d.sumFull), t, 'full');
+  if (d.sumShort) { closeMenus(); summarize(Number(d.sumShort), null, 'short'); }
+  if (d.msgs) toggleMessages(Number(d.msgs));
+  if (d.profile) toggleProfile(Number(d.profile));
+  if (d.profileRefresh) refreshProfile(Number(d.profileRefresh), t);
+  if (d.chat) toggleChat(Number(d.chat));
+  if (d.saveNotes) saveNotes(Number(d.saveNotes), t);
+  if (d.qaSend) sendQa(Number(d.qaSend));
+  if (d.listenToggle) { const id = Number(d.listenToggle); openListen.has(id) ? openListen.delete(id) : openListen.add(id); renderChatList(); }
+  if (d.taskAddSug) { tasksSuggestOpen = true; await api(`/api/tasks/${d.taskAddSug}`, { method: 'POST', body: JSON.stringify({ status: 'open' }) }); loadTasks(); toast('✓ נוסף למשימות'); }
+  if (d.taskSugAll) {
+    t.disabled = true;
+    for (const sug of tasksState.suggested) await api(`/api/tasks/${sug.id}`, { method: 'POST', body: JSON.stringify({ status: d.taskSugAll }) }).catch(() => {});
+    tasksSuggestOpen = false; await loadTasks(); toast(d.taskSugAll === 'open' ? '✓ כל ההצעות נוספו' : 'ההצעות נוקו');
+  }
+  if (d.learn) {
+    closeMenus();
+    const rowid = Number(d.learn);
+    toast('לומד את אופי השיחה... (עד דקה)');
+    const r = await api(`/api/chats/${rowid}/learn`, { method: 'POST', body: '{}' }).catch((err) => ({ error: err.message }));
+    if (r.error) toast(r.error, true);
+    else { const c = chats.find((x) => x.rowid === rowid); if (c) { c.group_profile = r.group_profile; c.group_profile_at = Math.floor(Date.now() / 1000); } refreshCard(rowid); toggleCard(rowid, true); loadMemory(); toast('✓ נלמד'); }
+  }
+  if (d.personLearn) {
+    t.disabled = true; t.textContent = 'לומד...'; peopleOpen = true;
+    const r = await api(`/api/people/${encodeURIComponent(d.personLearn)}/learn`, { method: 'POST', body: '{}' }).catch((err) => ({ error: err.message }));
+    toast(r.error || '✓ נלמד מכל השיחות', Boolean(r.error)); loadMemory();
+  }
+  if (d.qSkip) { await api(`/api/memory/questions/${d.qSkip}`, { method: 'POST', body: JSON.stringify({ skip: true }) }); loadMemory(); }
+  if (d.factDel) { await api(`/api/memory/facts/${d.factDel}/delete`, { method: 'POST', body: '{}' }); loadMemory(); toast('נמחק מהזיכרון'); }
+  if (d.taskDismiss) { await api(`/api/tasks/${d.taskDismiss}`, { method: 'POST', body: JSON.stringify({ status: 'dismissed' }) }); loadTasks(); }
+  if (d.unknownRefresh !== undefined) loadUnknown(true);
+  if (d.selectAdd) {
+    await api(`/api/chats/${d.selectAdd}/select`, { method: 'POST', body: JSON.stringify({ selected: true }) });
+    closeDrawer(); await loadChats(); openChat(Number(d.selectAdd));
+  }
+  if (d.loveSet) {
+    closeMenus();
+    $('#love').innerHTML = '<div class="skeleton">מנתח את השיחה...</div>';
+    $('#loveBlock').scrollIntoView({ behavior: 'smooth' });
+    try { renderLove(await api('/api/love/chat', { method: 'POST', body: JSON.stringify({ rowid: Number(d.loveSet) }) })); } catch (err) { toast(err.message, true); loadLove(); }
+  }
+  if (d.loveRefresh !== undefined) loadLove(true);
+  if (d.copyReply !== undefined) {
+    const text = $('#love [data-reply-text]')?.textContent || '';
+    try { await navigator.clipboard.writeText(text); toast('✓ הועתק - הדבק בוואטסאפ'); } catch { toast('לא הצלחתי להעתיק', true); }
+  }
+  if (d.edit) openEdit(Number(d.edit));
+  if (d.syncChats !== undefined) { t.disabled = true; try { await api('/api/chats/sync', { method: 'POST', body: '{}' }); await loadChats(); } finally { t.disabled = false; } }
+  if (d.backfill) {
+    closeMenus();
+    const r = await api(`/api/chats/${d.backfill}/backfill`, { method: 'POST', body: '{}' }).catch((err) => ({ error: err.message }));
+    alertInline(Number(d.backfill), r.error ? `שגיאה: ${r.error}` : `נטענו ${r.saved} הודעות קודמות`);
+    loadChats();
+  }
+  if (d.gkind) { galleryKind = d.gkind; try { localStorage.setItem('galleryKind', galleryKind); } catch { /* ignore */ } loadGallery(); }
+  if (d.g !== undefined) openLightbox(Number(d.g));
+  if (d.closeLightbox !== undefined) $('#lightbox').close();
+  if (t.id === 'galleryMore') loadGallery(true);
+  if (t.id === 'lbOpenChat' && t.dataset.lbChat) { $('#lightbox').close(); openChat(Number(t.dataset.lbChat)); }
+  if (d.filter) { chatFilter = d.filter; try { localStorage.setItem('chatFilter', chatFilter); } catch { /* ignore */ } renderChatList(); }
+  if (d.closeDialog !== undefined) (e.target.closest('dialog') || $('#editDialog')).close();
+  if (d.scrollEvents !== undefined) $('#events').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (d.ev) {
+    closeMenus();
+    await api(`/api/events/${d.ev}/status`, { method: 'POST', body: JSON.stringify({ status: d.status }) });
+    loadEvents();
+  }
+});
+
+document.addEventListener('toggle', (e) => {
+  if (e.target.matches?.('[data-people-details]')) { peopleOpen = e.target.open; return; }
+  if (e.target.classList?.contains('suggest') && e.target.closest('#tasks')) tasksSuggestOpen = e.target.open;
+}, true);
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { closeDrawer(); closeMenus(); }
+  if (e.key !== 'Enter') return;
+  const qa = e.target.closest('form[data-q-form] textarea');
+  if (qa && !e.shiftKey) { e.preventDefault(); qa.form.requestSubmit(); return; }
+  const input = e.target.closest('input[data-qa-input]');
+  if (input) sendQa(Number(input.dataset.qaInput));
+});
+
+
+/* ===================== 3D: tilt toward the pointer + rise-in ===================== */
+const MOTION_OK = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+const CAN_HOVER = matchMedia('(hover: hover) and (pointer: fine)').matches;
+let tiltEl = null;
+function untilt(el) { if (!el) return; el.classList.remove('tilting'); el.style.removeProperty('--rx'); el.style.removeProperty('--ry'); }
+if (MOTION_OK && CAN_HOVER) {
+  document.addEventListener('pointermove', (e) => {
+    if (document.documentElement.classList.contains('fx-off')) return;
+    const el = e.target.closest('.tilt, .chat-card:not(.is-open), .event-hero');
+    if (el !== tiltEl) { untilt(tiltEl); tiltEl = el; }
+    if (!el || el.closest('.drawer') || e.target.closest('input, textarea, select, .menu')) { untilt(el); return; }
+    const r = el.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+    const max = Number(el.dataset.tilt || 6);
+    el.classList.add('tilting');
+    el.style.setProperty('--ry', `${((x - 0.5) * max * 2).toFixed(2)}deg`);
+    el.style.setProperty('--rx', `${((0.5 - y) * max * 2).toFixed(2)}deg`);
+    el.style.setProperty('--mx', `${(x * 100).toFixed(1)}%`);
+    el.style.setProperty('--my', `${(y * 100).toFixed(1)}%`);
+  }, { passive: true });
+  document.addEventListener('pointerleave', () => { untilt(tiltEl); tiltEl = null; });
+}
+if (MOTION_OK && 'IntersectionObserver' in window) {
+  const io = new IntersectionObserver((entries) => entries.forEach((en) => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }), { rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('#love, #tasks, #unknown, .ask, #questions, #knowledge, .chats-panel').forEach((el) => { el.classList.add('reveal'); io.observe(el); });
+  setTimeout(() => document.querySelectorAll('.reveal:not(.in)').forEach((el) => el.classList.add('in')), 2500); // never leave anything hidden
+}
+
+$('#scrim').addEventListener('click', closeDrawer);
+$('#genQuestions').addEventListener('click', async (e) => {
+  const btn = e.currentTarget; btn.disabled = true; btn.textContent = 'חושב על שאלות...';
+  try { await api('/api/memory/questions/generate', { method: 'POST', body: '{}' }); await loadMemory(); toast(memState.questions.length ? '✓ יש שאלות חדשות' : 'לא היו היום מספיק הודעות לשאלות'); }
+  catch (err) { toast(err.message, true); }
+  finally { btn.disabled = false; btn.textContent = 'שאל אותי עכשיו'; }
+});
+$('#todayLabel').textContent = new Date().toLocaleDateString('he-IL', { timeZone: TZ, weekday: 'long', day: 'numeric', month: 'long' });
+$('#galleryChat').addEventListener('change', () => loadGallery());
+$('#search').addEventListener('input', renderChatList);
+$('#askBtn').addEventListener('click', askQuestion);
+$('#askInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') askQuestion(); });
+$('#refreshAll').addEventListener('click', async (e) => {
+  const btn = e.currentTarget; btn.disabled = true; btn.textContent = 'מסכם...';
+  for (const c of chats.filter((c) => c.selected && isListening(c))) await summarize(c.rowid, null, 'short');
+  btn.disabled = false; btn.textContent = 'סכם הכל';
+});
+
+loadChats().catch((err) => { $('#chatList').innerHTML = `<div class="error-text">${esc(err.message)}</div>`; });
+loadEvents().catch((err) => { $('#events').innerHTML = `<div class="error-text">${esc(err.message)}</div>`; });
+loadLove().catch(() => {});
+loadTasks().catch((err) => { $('#tasks').innerHTML = `<span class="error-text">${esc(err.message)}</span>`; });
+loadUnknown().catch(() => {});
+loadGallery().catch(() => {});
+loadMemory().catch((err) => { $('#questions').innerHTML = `<span class="error-text">${esc(err.message)}</span>`; $('#knowledge').innerHTML = ''; });
+loadStatus();
+checkVersion();
+setInterval(tickCountdowns, 1000);
+setInterval(() => { loadTasks().catch(() => {}); }, 2 * 60000);
+setInterval(() => { loadUnknown().catch(() => {}); }, 10 * 60000);
+setInterval(() => { loadEvents().catch(() => {}); }, 60000);
+setInterval(() => { loadLove().catch(() => {}); }, 5 * 60000);
+setInterval(() => { if (!document.querySelector('#memoryBlock :focus')) loadMemory().catch(() => {}); }, 10 * 60000);
+
+/* ===================== WhatsApp linking (first run) + settings ===================== */
+let linkDismissed = false;
+function showLinkStep(n) { [1, 2, 3].forEach((i) => $('#linkStep' + i).classList.toggle('hidden', i !== n)); }
+async function pollLink() {
+  let st;
+  try { st = await (await fetch('/api/wa/status')).json(); } catch { return; }
+  const ov = $('#linkOverlay');
+  if (st.engine !== 'baileys') return;
+  if (st.needsLink && !st.linked) {
+    linkDismissed = false;
+    if (ov.classList.contains('hidden')) { ov.classList.remove('hidden'); showLinkStep(1); }
+    else if (!$('#linkStep3').classList.contains('hidden')) showLinkStep(1);
+    return;
+  }
+  if (ov.classList.contains('hidden') || linkDismissed) return;
+  if (st.linked) {
+    showLinkStep(3);
+    const h = st.history || {};
+    $('#linkHistory').textContent = h.batches ? `התקבלו ${h.messages.toLocaleString('he-IL')} הודעות${h.idleSec > 30 ? ' - נראה שהסנכרון הסתיים' : '…'}` : 'ממתין להיסטוריה מהטלפון…';
+  }
+}
+$('#linkForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = $('#linkBtn'); btn.disabled = true; $('#linkMsg').textContent = 'מבקש קוד מוואטסאפ…';
+  try {
+    const r = await api('/api/wa/pair', { method: 'POST', body: JSON.stringify({ phone: $('#linkPhone').value }) });
+    $('#linkCode').textContent = r.code; $('#linkMsg').textContent = ''; showLinkStep(2);
+  } catch (err) { $('#linkMsg').textContent = err.message; }
+  btn.disabled = false;
+});
+$('#linkAgain').addEventListener('click', () => showLinkStep(1));
+$('#linkDone').addEventListener('click', () => { linkDismissed = true; $('#linkOverlay').classList.add('hidden'); location.reload(); });
+pollLink(); setInterval(pollLink, 3000);
+
+</script>
+<link rel="stylesheet" href="/public/settings.css">
+<script src="/public/settings.js"></script>
+<script src="/public/care.js"></script>
+</body>
+</html>

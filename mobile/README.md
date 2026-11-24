@@ -95,6 +95,15 @@ cargo test
 the cookie and `Host` checks, header rewriting, the offline page, reconnecting after the computer comes back,
 revocation and unpairing.
 
+## Builds in GitHub Actions
+
+`.github/workflows/android.yml` builds a signed arm64 APK. On a `v*` tag it attaches the APK to that release. A manual
+run with a tag builds `main` and attaches the APK to that existing release. Signing uses the repository secrets
+`ANDROID_KEYSTORE_B64` (base64 PKCS12, alias `wasummary`) and `ANDROID_KEYSTORE_PASSWORD`. Keep a copy of that key
+outside the repository: without it, a new version can't be installed over an old one. If the secrets are missing, the
+run signs with a one-off key and shows a warning. `.github/workflows/mobile.yml` runs the tests and checks the iOS
+build. An iOS build for testers (TestFlight) needs an Apple Developer account.
+
 ## Not verified yet
 
 The desktop build has been run end to end against the real dashboard over Iroh, and the tests pass. The Android and

@@ -38,22 +38,27 @@ jobs:
         with:
           node-version: 22
 
+      # The cargo flavour of the Tauri CLI (prebuilt binary): Gradle calls back into `cargo tauri`.
+      # (The npm flavour makes Gradle look for a local node script that this project does not have.)
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: tauri-cli@2.12.6
+
       - name: Rust toolchain (Android target)
         run: |
           rustup toolchain install stable --profile minimal
           rustup default stable
           rustup target add aarch64-linux-android
 
-      - name: Android NDK + Tauri CLI
+      - name: Android NDK + version
         run: |
           echo "NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
-          npm install -g @tauri-apps/cli@2.12.6
           echo "VERSION=$(node -p "require('./app/package.json').version")" >> "$GITHUB_ENV"
 
       - name: Generate the Android project
         working-directory: mobile/src-tauri
         run: |
-          tauri android init --ci
+          cargo tauri android init --ci
           # Plain http only to the app's own local proxy (see mobile/README.md).
           mkdir -p gen/android/app/src/main/res/xml
           cp ../android/network_security_config.xml gen/android/app/src/main/res/xml/
@@ -63,7 +68,7 @@ jobs:
 
       - name: Build (arm64)
         working-directory: mobile/src-tauri
-        run: tauri android build --apk --target aarch64 --ci
+        run: cargo tauri android build --apk --target aarch64 --ci
 
       - name: Sign
         env:

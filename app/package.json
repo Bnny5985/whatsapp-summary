@@ -1,6 +1,6 @@
 {
   "name": "whatsapp-summary-desktop",
-  "version": "0.2.0",
+  "version": "0.3.0-beta.1",
   "description": "Desktop shell for the WhatsApp summary bot: window, tray, autostart, engine supervisor",
   "main": "main.js",
   "private": true,

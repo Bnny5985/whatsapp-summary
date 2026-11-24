@@ -139,6 +139,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .btn-ghost:hover { background: var(--surface-2); color: var(--text); }
 .btn-sm { min-height: 30px; padding: 0 11px; font-size: var(--fs-xs); }
 .btn-icon { width: 34px; min-height: 34px; padding: 0; }
+/* Settings: a real button with an icon and a word, so it is easy to find on every system (the ⚙ character is tiny on a Mac). */
+.btn-settings { min-height: 40px; padding: 0 14px; }
+.btn-settings svg { flex: none; }
 .btn.danger, .menu .danger { color: var(--danger); }
 .field, .select { min-height: 40px; padding: 0 14px; border-radius: var(--r-md); border: 1px solid var(--border-strong); background: rgba(0, 0, 0, .28); color: var(--text);
   box-shadow: inset 0 2px 6px rgba(0,0,0,.45); outline: none; transition: border-color var(--t-fast), box-shadow var(--t-fast); }
@@ -465,6 +468,8 @@ dialog.modal::backdrop { background: rgba(4, 4, 10, .65); backdrop-filter: blur(
   main { padding: var(--s4) 16px 110px; }
   .topbar { padding: 10px 16px; }
   .brand small { display: none; }
+  .btn-settings { width: 42px; min-height: 42px; padding: 0; }
+  .btn-settings .lbl { display: none; }
   .love-hero { padding: var(--s4); border-radius: var(--r-lg); }
   .love-top { gap: var(--s3); }
   .heart3d { width: 60px; height: 60px; }
@@ -552,7 +557,10 @@ dialog.modal::backdrop { background: rgba(4, 4, 10, .65); backdrop-filter: blur(
     <option value="72">3 ימים</option>
     <option value="168">שבוע</option>
   </select>
-  <button class="btn btn-ghost btn-icon" id="openSettings" type="button" title="הגדרות">⚙</button>
+  <button class="btn btn-settings" id="openSettings" type="button" title="הגדרות" aria-label="הגדרות">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <span class="lbl">הגדרות</span>
+  </button>
   <button class="btn btn-primary" id="refreshAll">סכם הכל</button>
 </header>
 

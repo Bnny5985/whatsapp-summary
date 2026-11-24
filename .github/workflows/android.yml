@@ -1,0 +1,111 @@
+# Builds the Android phone app (mobile/, Tauri v2) as a signed APK and attaches it to the GitHub release.
+#   - a pushed v* tag: builds that tag and attaches the APK to its release (waits for the Windows job to create it)
+#   - manual run: builds main and, when a tag is given, attaches the APK to that existing release
+#   - pull request touching mobile/ or this file: build only (nothing is attached)
+# Signing: GitHub secrets ANDROID_KEYSTORE_B64 (base64 PKCS12, alias "wasummary") and ANDROID_KEYSTORE_PASSWORD.
+# Without them a one-off key is used: the APK installs, but the next version can't update it in place.
+name: android
+
+on:
+  push:
+    tags: ['v*']
+  pull_request:
+    paths: ['mobile/**', '.github/workflows/android.yml']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing release tag to attach the APK to (e.g. v0.3.0-beta.1). Empty = build only.'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event_name == 'push' && github.ref_name || github.event_name == 'workflow_dispatch' && inputs.tag || '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Rust toolchain (Android target)
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustup target add aarch64-linux-android
+
+      - name: Android NDK + Tauri CLI
+        run: |
+          echo "NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
+          npm install -g @tauri-apps/cli@2.12.6
+          echo "VERSION=$(node -p "require('./app/package.json').version")" >> "$GITHUB_ENV"
+
+      - name: Generate the Android project
+        working-directory: mobile/src-tauri
+        run: |
+          tauri android init --ci
+          # Plain http only to the app's own local proxy (see mobile/README.md).
+          mkdir -p gen/android/app/src/main/res/xml
+          cp ../android/network_security_config.xml gen/android/app/src/main/res/xml/
+          MANIFEST=gen/android/app/src/main/AndroidManifest.xml
+          sed -i '0,/<application/s//<application android:networkSecurityConfig="@xml\/network_security_config"/' "$MANIFEST"
+          grep -n "networkSecurityConfig" "$MANIFEST"
+
+      - name: Build (arm64)
+        working-directory: mobile/src-tauri
+        run: tauri android build --apk --target aarch64 --ci
+
+      - name: Sign
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          KS_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          UNSIGNED=$(find mobile/src-tauri/gen/android/app/build/outputs/apk -name '*release*.apk' | head -1)
+          echo "unsigned: $UNSIGNED"
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          if [ -n "${KS_B64:-}" ] && [ -n "${KS_PASSWORD:-}" ]; then
+            echo "$KS_B64" | base64 -d > ks.p12
+            echo "Signing with the project's release key."
+          else
+            echo "::warning::ANDROID_KEYSTORE_B64 / ANDROID_KEYSTORE_PASSWORD are not set: signing with a one-off key (later versions won't update this install in place)."
+            KS_PASSWORD=$(openssl rand -hex 16)
+            keytool -genkeypair -keystore ks.p12 -storetype PKCS12 -alias wasummary -keyalg RSA -keysize 4096 -validity 10000 \
+              -dname "CN=WhatsApp Summary (one-off)" -storepass "$KS_PASSWORD" -keypass "$KS_PASSWORD"
+          fi
+          export KS_PASSWORD
+          OUT="WhatsApp-Summary-${VERSION}.apk"
+          "$BT/zipalign" -p -f 4 "$UNSIGNED" aligned.apk
+          "$BT/apksigner" sign --ks ks.p12 --ks-type PKCS12 --ks-key-alias wasummary --ks-pass env:KS_PASSWORD --key-pass env:KS_PASSWORD --out "$OUT" aligned.apk
+          "$BT/apksigner" verify --print-certs "$OUT" | head -3
+          rm -f ks.p12 aligned.apk
+          sha256sum "$OUT" > "$OUT.sha256"
+          echo "APK=$OUT" >> "$GITHUB_ENV"
+          ls -la "$OUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WhatsApp-Summary-${{ env.VERSION }}-android
+          path: |
+            ${{ env.APK }}
+            ${{ env.APK }}.sha256
+          if-no-files-found: error
+
+      - name: Attach to the release
+        if: env.TAG != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # The Windows job creates the release; wait for it (up to 45 minutes).
+          for i in $(seq 1 90); do gh release view "$TAG" >/dev/null 2>&1 && break; sleep 30; done
+          gh release upload "$TAG" "$APK" "$APK.sha256" --clobber

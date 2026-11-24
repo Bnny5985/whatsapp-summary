@@ -1,6 +1,6 @@
 [package]
 name = "wa-summary-mobile"
-version = "0.1.0"
+version = "0.3.0"
 description = "Phone app for WhatsApp Summary: pairs with your computer by QR code and opens its dashboard over Iroh"
 edition = "2024"
 

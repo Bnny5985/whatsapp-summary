@@ -3,6 +3,12 @@
 (() => {
   'use strict';
   const dlg = $('#settingsDialog');
+  // Which system the computer runs (the texts below name Windows or macOS). Asked once; Windows until the answer arrives.
+  let PLATFORM = 'win32';
+  fetch('/api/version').then((r) => r.json()).then((v) => { if (v?.platform) PLATFORM = v.platform; }).catch(() => {});
+  const isMac = () => PLATFORM === 'darwin';
+  const OS_NAME = () => (isMac() ? 'macOS' : 'Windows');
+  const STARTS_WITH = () => (isMac() ? 'היא עולה לבד כשנכנסים ל-Mac' : 'היא עולה לבד עם Windows');
 
   /* ===================== look & layout preferences ===================== */
   const MODULES = [
@@ -320,8 +326,8 @@
     const bench = st.state.bench || {};
     area.innerHTML = `
       <div class="st-sec st-rec" id="recBox"><h4>⭐ המלצה למחשב שלך</h4><div class="skeleton">סורק את המחשב ובודק אילו מודלים חדשים יצאו…</div></div>
-      <div class="st-sec"><h4>הורדות</h4><div id="jobs" class="st-list"></div></div>
-      <div class="st-sec"><h4>מודלים מותקנים</h4>${live ? `<div class="st-row meta" style="margin-bottom:8px">ראשי: ${badge(srv.main)} · סוכן: ${badge(srv.agent)}</div>` : '<p class="meta">המנוע המובנה עוד לא פעיל. הוא יופעל אוטומטית בסוף ההתקנה בלחיצה אחת.</p>'}
+      <div class="st-sec"><h4>הורדות</h4><div id="jobs" class="st-list"></div><p class="meta" style="margin:6px 0 0">הורדה שהתחילה ממשיכה לבד מאיפה שנעצרה, גם אם התוכנה מופעלת מחדש.</p></div>
+      <div class="st-sec"><h4>מודלים מותקנים</h4>${live ? `<div class="st-row meta" style="margin-bottom:8px">ראשי: ${badge(srv.main)} · סוכן: ${badge(srv.agent)}</div>` : (st.installed.length ? '<p class="meta">יש מודלים מוכנים, אבל המנוע המובנה עוד לא פעיל: לוחצים <b>שמור והפעל</b> בהגדרות המנוע למטה.</p>' : '<p class="meta">המנוע המובנה עוד לא פעיל. הוא יופעל אוטומטית בסוף ההתקנה בלחיצה אחת.</p>')}
         <div class="st-list">${st.installed.length ? st.installed.map((m) => {
           const b = bench[m.file];
           return `<div class="st-item" style="flex-wrap:wrap"><div class="grow"><div class="t">${esc(m.repo.split('/')[1])} <span class="st-badge">${esc(m.quant)}</span>
@@ -334,7 +340,7 @@
             <button class="btn btn-ghost btn-sm" type="button" data-rm="${esc(m.file)}">מחק</button></div>`;
         }).join('') : '<p class="meta" style="margin:0">אין עדיין מודלים.</p>'}</div><div class="st-msg" id="instMsg"></div></div>
       <div class="st-sec"><h4>הגדרות מנוע</h4><div class="st-grid">
-        <label class="st-field">האצה<select class="select" id="bGpu"><option value="auto">אוטומטי</option><option value="vulkan">כרטיס מסך (Vulkan)</option><option value="cpu">מעבד בלבד</option></select></label>
+        <label class="st-field">האצה<select class="select" id="bGpu"><option value="auto">אוטומטי</option><option value="vulkan">${st.hardware?.accel === 'Metal' ? 'שבב גרפי (Metal)' : 'כרטיס מסך (Vulkan)'}</option><option value="cpu">מעבד בלבד</option></select></label>
         <label class="st-field">גודל הקשר (טוקנים)<select class="select" id="bCtx">${[4096, 8192, 16384, 32768, 65536].map((c) => `<option value="${c}" ${Number(local.context) === c ? 'selected' : ''}>${c.toLocaleString('he-IL')}</option>`).join('')}</select></label></div>
         <div class="st-row" style="margin-top:10px"><button class="btn btn-sm" type="button" id="bSave">שמור והפעל</button><span class="st-msg" id="bMsg"></span></div></div>
       ${prefs.mode === 'advanced' ? '<div class="st-sec"><h4>כל המודלים העדכניים</h4><div id="catalog"><div class="skeleton">טוען קטלוג…</div></div></div>' : '<p class="meta">לרשימה המלאה של המודלים: הגדרות › מראה › מצב מתקדם.</p>'}`;
@@ -509,10 +515,10 @@
     const onPc = s.local;
     el.innerHTML = '<p class="meta">Tailscale היא אפליקציה חינמית שמחברת בצורה פרטית ומוצפנת בין המחשב לטלפון, ופותחים את התוכנה בדפדפן של הטלפון. מתאים למי שכבר משתמש בה.</p>' + `
       ${step(1, s.installed, 'מתקינים את Tailscale במחשב', s.installed ? '<p class="meta" style="margin:0">מותקן.</p>'
-        : `<p class="meta">לוחצים על הכפתור, מורידים את הגרסה ל-Windows ומתקינים כמו כל תוכנה. בסוף ההתקנה נפתח חלון התחברות: מתחברים עם חשבון Google (או Microsoft / Apple). זה בחינם.</p>
+        : `<p class="meta">לוחצים על הכפתור, מורידים את הגרסה ל-${OS_NAME()} ומתקינים כמו כל תוכנה. בסוף ההתקנה נפתח חלון התחברות: מתחברים עם חשבון Google (או Microsoft / Apple). זה בחינם.</p>
            <a class="btn btn-primary" href="${esc(s.download)}" target="_blank" rel="noopener">⬇ הורדת Tailscale</a>`)}
       ${s.installed ? step(2, s.running, 'מתחברים ל-Tailscale במחשב', s.running ? `<p class="meta" style="margin:0">מחובר בתור <b dir="ltr">${esc(s.login)}</b>.</p>`
-        : '<p class="meta" style="margin:0">ליד השעון של Windows יש אייקון של Tailscale (כמה נקודות). לוחצים עליו ובוחרים <b>Log in</b> (או <b>Connect</b>). אחרי שמתחברים, חוזרים לכאן ולוחצים "בדוק שוב".</p>') : ''}
+        : `<p class="meta" style="margin:0">${isMac() ? 'בשורת התפריטים למעלה (ליד השעון)' : 'ליד השעון של Windows'} יש אייקון של Tailscale (כמה נקודות). לוחצים עליו ובוחרים <b>Log in</b> (או <b>Connect</b>). אחרי שמתחברים, חוזרים לכאן ולוחצים "בדוק שוב".</p>`) : ''}
       ${s.running ? step(3, Boolean(s.url), 'מפעילים את הגישה', s.url
         ? `<p class="meta">הכתובת של התוכנה בטלפון:</p><div class="st-row"><b dir="ltr" style="font-size:18px" id="rmUrl">${esc(s.url)}</b>
              <button class="btn btn-sm" type="button" id="rmCopy">העתק</button>${onPc ? '<button class="btn btn-sm" type="button" id="rmTg">שלח לי בטלגרם</button>' : ''}</div>
@@ -526,7 +532,7 @@
           <li>פותחים אותה ומתחברים <b>עם אותו חשבון</b> שהתחברת איתו במחשב, ומאשרים את בקשת ה-VPN.</li>
           <li>פותחים בדפדפן (Chrome או Safari) את הכתובת${s.url ? ` <b dir="ltr">${esc(s.url)}</b>` : ' שתופיע כאן אחרי ההפעלה'}.</li>
           <li>כדי שיהיה אייקון כמו אפליקציה: בתפריט הדפדפן בוחרים <b>הוספה למסך הבית</b>.</li>
-        </ol><p class="meta" style="margin:8px 0 0">המחשב צריך להיות דלוק והתוכנה פועלת (היא עולה לבד עם Windows).</p>`)}
+        </ol><p class="meta" style="margin:8px 0 0">המחשב צריך להיות דלוק והתוכנה פועלת (${STARTS_WITH()}).</p>`)}
       <div class="st-row"><button class="btn btn-ghost btn-sm" type="button" id="rmRe">בדוק שוב</button><span class="st-msg" id="rmMsg"></span></div>`;
     el.onclick = async (e) => {
       const b = e.target.closest('button'); if (!b) return;
@@ -575,16 +581,32 @@
         <h4>אפליקציית הטלפון (מומלץ)</h4>
         ${app}
         <ol class="meta" style="margin:12px 0 0;padding-inline-start:22px;line-height:2">
-          <li>מתקינים בטלפון את האפליקציה <b>סיכומי וואטסאפ</b>.</li>
+          <li>מתקינים בטלפון את האפליקציה <b>סיכומי וואטסאפ</b> (הקוד כאן למטה).</li>
           <li>כאן במחשב לוחצים <b>צמד טלפון חדש</b>.</li>
           <li>באפליקציה לוחצים <b>סרוק קוד QR מהמחשב</b> ומכוונים את המצלמה לקוד.</li>
         </ol>
-        <p class="meta" style="margin:8px 0 0">המחשב צריך להיות דלוק והתוכנה פועלת (היא עולה לבד עם Windows).</p>
+        <p class="meta" style="margin:8px 0 0">המחשב צריך להיות דלוק והתוכנה פועלת (${STARTS_WITH()}).</p>
       </div>
+      <div class="st-sec" id="p2App"><h4>הורדת האפליקציה לאנדרואיד</h4><div class="skeleton">מכין קוד…</div></div>
       <details class="st-sec" id="tsBox"><summary style="cursor:pointer"><b>דרך נוספת: Tailscale</b></summary><div id="tsInner" style="margin-top:10px"></div></details>
       <div class="st-row"><button class="btn btn-ghost btn-sm" type="button" id="p2Re">בדוק שוב</button><span class="st-msg" id="p2Msg"></span></div>`;
     if (phoneFlash) { msg($('#p2Msg', el), phoneFlash, 'ok'); phoneFlash = ''; }
     $('#tsBox', el).addEventListener('toggle', (e) => { if (e.target.open && !$('#tsInner', el).childElementCount) renderTailscale($('#tsInner', el)).catch((err) => msg($('#p2Msg', el), err.message, 'bad')); }, { once: false });
+
+    // Download QR for the Android app: the phone's camera opens the link and downloads the .apk.
+    api('/api/p2p/app').then((d) => {
+      const box = $('#p2App', el); if (!box) return;
+      box.innerHTML = `<h4>הורדת האפליקציה לאנדרואיד</h4>
+        <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+          <div style="width:170px;flex:none;background:#fff;padding:8px;border-radius:12px">${d.svg}</div>
+          <div class="grow" style="min-width:200px"><ol class="meta" style="margin:0;padding-inline-start:22px;line-height:1.9">
+            <li>פותחים את המצלמה בטלפון ומכוונים לקוד.</li>
+            <li>לוחצים על הקישור שמופיע${d.direct ? ', והקובץ יורד' : ' ומורידים את הקובץ שנגמר ב-<b dir="ltr">.apk</b>'}${d.version ? ` (גרסה <span dir="ltr">${esc(d.version)}</span>)` : ''}.</li>
+            <li>פותחים את הקובץ ומאשרים <b>התקנה ממקור זה</b>. אם מופיעה אזהרה של Google Play Protect: <b>התקן בכל זאת</b> (האפליקציה עוד לא בחנות).</li>
+          </ol>
+          <p class="meta" style="margin:8px 0 0">לאייפון עוד אין אפליקציה. אפשר להשתמש ב-Tailscale (למטה).</p></div>
+        </div>`;
+    }).catch(() => { const box = $('#p2App', el); if (box) box.remove(); });
 
     const qrBox = $('#p2Qr', el);
     const showQr = (r) => {
@@ -637,7 +659,7 @@
         <label class="st-opt"><input type="radio" name="lm" value="simple" ${prefs.mode === 'simple' ? 'checked' : ''}><b>רגיל</b><span>נקי ושקט: מה שצריך ביום-יום.</span></label>
         <label class="st-opt"><input type="radio" name="lm" value="advanced" ${prefs.mode === 'advanced' ? 'checked' : ''}><b>מתקדם</b><span>כל המודלים, סוכנים, נתונים ופרטים טכניים.</span></label></div></div>
       <div class="st-sec"><h4>ערכת צבעים</h4><div class="st-opts">
-        ${[['dark', 'כהה'], ['light', 'בהירה'], ['auto', 'לפי Windows']].map(([v, l]) => `<label class="st-opt"><input type="radio" name="lt" value="${v}" ${prefs.theme === v ? 'checked' : ''}><b>${l}</b></label>`).join('')}</div>
+        ${[['dark', 'כהה'], ['light', 'בהירה'], ['auto', `לפי ${OS_NAME()}`]].map(([v, l]) => `<label class="st-opt"><input type="radio" name="lt" value="${v}" ${prefs.theme === v ? 'checked' : ''}><b>${l}</b></label>`).join('')}</div>
         <h4 style="margin-top:14px">צבע הדגשה</h4><div class="st-swatches">${ACC.map(([v, c]) => `<button type="button" class="st-swatch ${prefs.accent === v ? 'on' : ''}" data-acc="${v}" style="background:${c}" title="${v}"></button>`).join('')}</div></div>
       <div class="st-sec"><h4>גודל טקסט</h4><div class="st-opts">${[[90, 'קטן'], [100, 'רגיל'], [115, 'גדול'], [130, 'גדול מאוד']].map(([v, l]) => `<label class="st-opt"><input type="radio" name="lx" value="${v}" ${Number(prefs.text) === v ? 'checked' : ''}><b style="font-size:${v / 100}em">${l}</b></label>`).join('')}</div></div>
       <div class="st-sec"><h4>אפקטים</h4><label class="st-check"><input type="checkbox" id="lfx" ${prefs.fx ? 'checked' : ''}>תלת-ממד, תאורה ותנועה (כיבוי חוסך משאבים ומקל על הקריאה)</label></div>`;
@@ -680,7 +702,9 @@
         <label class="st-field">שעת הסיכום היומי<select class="select" id="gHour">${Array.from({ length: 24 }, (_, h) => `<option value="${h}" ${g.digest_hour === h ? 'selected' : ''}>${String(h).padStart(2, '0')}:00</option>`).join('')}</select></label>
         <label class="st-field">כמה ימים לשמור צ׳אטים לא מסומנים בארכיון<input class="field" type="number" min="3" max="365" id="gDays" value="${g.archive_days}"></label></div>
         <div class="st-row" style="margin-top:12px"><button class="btn btn-primary btn-sm" type="button" id="gSave">שמור</button><span class="st-msg" id="gMsg"></span></div></div>
-      <div class="st-sec"><h4>הפעלה עם Windows</h4><p class="meta" style="margin:0">התוכנה עולה לבד כשנכנסים ל-Windows וממשיכה לעבוד ברקע גם כשהחלון סגור. אפשר לכבות את זה מהאייקון שלה ליד השעון (לחיצה ימנית).</p></div>`;
+      ${isMac()
+        ? '<div class="st-sec"><h4>הפעלה עם ה-Mac</h4><p class="meta" style="margin:0">התוכנה עולה לבד כשנכנסים ל-Mac וממשיכה לעבוד ברקע גם כשהחלון סגור. אפשר לכבות את זה מהאייקון שלה בשורת התפריטים למעלה, או בהגדרות המערכת › כללי › פריטי התחברות.</p></div>'
+        : '<div class="st-sec"><h4>הפעלה עם Windows</h4><p class="meta" style="margin:0">התוכנה עולה לבד כשנכנסים ל-Windows וממשיכה לעבוד ברקע גם כשהחלון סגור. אפשר לכבות את זה מהאייקון שלה ליד השעון (לחיצה ימנית).</p></div>'}`;
     $('#gSave', el).onclick = async () => { try { restarting(await post('/api/settings/general', { digest_hour: Number($('#gHour', el).value), archive_days: Number($('#gDays', el).value) }), $('#gMsg', el)); } catch (err) { msg($('#gMsg', el), err.message, 'bad'); } };
   };
 

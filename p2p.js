@@ -26,6 +26,26 @@ function findBridge() {
 
 const enabled = () => process.env.P2P_ENABLED === '1';
 
+// Where the phone app is downloaded: the newest GitHub release (beta included) that carries an Android .apk. Asked from
+// GitHub at most every 6 hours; when GitHub cannot be reached, the releases page (the .apk is listed there).
+const APP_REPO = 'Bnny5985/whatsapp-summary';
+const RELEASES_PAGE = `https://github.com/${APP_REPO}/releases`;
+let appCache = null;
+async function appDownload({ fetchImpl = globalThis.fetch, now = Date.now() } = {}) {
+  if (appCache && now - appCache.at < 6 * 3600e3) return { ...appCache.value, svg: qrSvg(appCache.value.url) };
+  let value = { url: RELEASES_PAGE, version: null, direct: false };
+  try {
+    const res = await fetchImpl(`https://api.github.com/repos/${APP_REPO}/releases?per_page=15`, { headers: { 'User-Agent': 'whatsapp-summary-desktop', Accept: 'application/json' }, signal: AbortSignal.timeout(10000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    for (const r of await res.json()) {
+      const apk = !r.draft && (r.assets || []).find((a) => /\.apk$/i.test(a.name));
+      if (apk && /^https:\/\/github\.com\//.test(apk.browser_download_url)) { value = { url: apk.browser_download_url, version: r.tag_name, direct: true }; break; }
+    }
+    appCache = { at: now, value };
+  } catch { /* offline: keep the releases page, and ask again next time */ }
+  return { ...value, svg: qrSvg(value.url) };
+}
+
 /** The phone's NodeId when the request really came through our bridge, otherwise null. */
 function remotePeer(req) {
   const given = Buffer.from(String(req.headers['x-p2p-proxy-secret'] || ''));
@@ -157,4 +177,4 @@ function createP2P({ port, dataDir, log = () => {} }) {
 }
 
 // sessionSecret: for the engine's own tests only (the secret never leaves this process except to the bridge).
-module.exports = { createP2P, remotePeer, findBridge, qrSvg, enabled, sessionSecret: () => SECRET };
+module.exports = { createP2P, remotePeer, findBridge, qrSvg, appDownload, enabled, sessionSecret: () => SECRET };

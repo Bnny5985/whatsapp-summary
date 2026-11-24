@@ -459,6 +459,8 @@ const localai = localaiMod.createLocalAI({ dir: LOCAL_AI_DIR, log, logError });
 if (localAiEnv.active) log(`Built-in local AI: main model ${localAiEnv.main ? 'set' : 'not chosen yet'}, agent model ${localAiEnv.agent ? 'set' : 'not chosen yet'}`);
 localai.startConfigured().catch((e) => logError('Local AI start failed:', e.message));
 process.on('exit', () => localai.stopAll());
+// macOS/Linux: the desktop shell stops the engine with SIGTERM; exit normally so the local model servers stop too.
+if (process.platform !== 'win32') process.once('SIGTERM', () => process.exit(0));
 if (router.model) log(`Model routing: small "${router.model}" filters -> big "${LLM_MODEL}" works on what's left`);
 
 const memory = require('./memory').createMemory({

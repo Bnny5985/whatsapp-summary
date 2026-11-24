@@ -62,6 +62,8 @@ const appSettings = require('./appsettings');
 // Under the desktop app the engine is restarted by exiting with code 3 (the app starts it again with the new settings).
 const SUPERVISED = process.env.BOT_SUPERVISED === '1';
 function restartSoon() { if (SUPERVISED) setTimeout(() => process.exit(3), 800); }
+// End of the one-click local AI setup: use the built-in engine from now on.
+function switchToBuiltin() { appSettings.updateEnv({ LOCAL_ENGINE: 'builtin' }); restartSoon(); }
 const SERVER_VERSION = 12; // bump together with UI_VERSION in ui.html
 const MEDIA_TYPES = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.ogg': 'audio/ogg' };
 const LISTEN_FLAGS = ['text', 'voice', 'images', 'links'];
@@ -238,7 +240,7 @@ function startWebServer({ waLink = () => null, db, events, calendar, summarizeCh
             if (p === 'benchmark') return send(res, 200, await localai.benchmark(b.role === 'agent' ? 'agent' : 'main'));
             if (p === 'setup') {
               // One click: the engine + the recommended models; when everything is in place, switch to the built-in engine and restart.
-              const run = localai.autoSetup({ main: b.main, agent: b.agent, variant: b.variant, onReady: () => { appSettings.updateEnv({ LOCAL_ENGINE: 'builtin' }); restartSoon(); } });
+              const run = localai.autoSetup({ main: b.main, agent: b.agent, variant: b.variant, onReady: switchToBuiltin });
               return send(res, 200, run);
             }
             if (p === 'restart') { send(res, 200, { ok: true, restarting: SUPERVISED }); return restartSoon(); }
@@ -271,6 +273,7 @@ function startWebServer({ waLink = () => null, db, events, calendar, summarizeCh
       // ---- phone access through the built-in bridge (p2p.js) - changed only from this computer (see COMPUTER_ONLY) ----
       if (url.pathname.startsWith('/api/p2p')) {
         try {
+          if (req.method === 'GET' && url.pathname === '/api/p2p/app') return send(res, 200, await p2pLib.appDownload());
           if (req.method === 'GET' && url.pathname === '/api/p2p') return send(res, 200, { ...(await p2p.status()), local: isLocalRequest(req, host) });
           if (req.method === 'POST' && url.pathname === '/api/p2p/enable') {
             appSettings.updateEnv({ P2P_ENABLED: '1' }); process.env.P2P_ENABLED = '1';
@@ -294,10 +297,11 @@ function startWebServer({ waLink = () => null, db, events, calendar, summarizeCh
         try { return send(res, 200, await backupNow()); } catch (err) { return send(res, 500, { error: err.message }); }
       }
       if (url.pathname === '/api/system/restart' && req.method === 'POST') { send(res, 200, { ok: true, restarting: SUPERVISED }); return restartSoon(); }
-      // Open the data folder in Explorer - only when the dashboard is opened on this computer itself.
+      // Open the data folder in Explorer / Finder - only when the dashboard is opened on this computer itself.
       if (url.pathname === '/api/system/open-folder' && req.method === 'POST') {
-        if (!['localhost', '127.0.0.1'].includes(host) || process.platform !== 'win32') return send(res, 403, { error: 'זמין רק במחשב עצמו' });
-        require('child_process').spawn('explorer.exe', [require('./paths').DATA_DIR], { detached: true, stdio: 'ignore' }).unref();
+        const opener = { win32: 'explorer.exe', darwin: 'open' }[process.platform];
+        if (!['localhost', '127.0.0.1'].includes(host) || !opener) return send(res, 403, { error: 'זמין רק במחשב עצמו' });
+        require('child_process').spawn(opener, [require('./paths').DATA_DIR], { detached: true, stdio: 'ignore' }).unref();
         return send(res, 200, { ok: true });
       }
       if (url.pathname === '/api/data/clear-archive' && req.method === 'POST') {
@@ -329,7 +333,7 @@ function startWebServer({ waLink = () => null, db, events, calendar, summarizeCh
         }
       }
       // GET /api/version - lets the dashboard notice when the running bot is older than the files on disk
-      if (req.method === 'GET' && url.pathname === '/api/version') return send(res, 200, { version: SERVER_VERSION });
+      if (req.method === 'GET' && url.pathname === '/api/version') return send(res, 200, { version: SERVER_VERSION, platform: process.platform });
       // GET /api/models - which model does what (and how much the small one filtered)
       if (req.method === 'GET' && url.pathname === '/api/models') {
         return send(res, 200, { ...models, fast: router?.model || null, fast_active: Boolean(router?.active), stats: router?.stats || null, cloud: llm ? llm.status() : [] });
@@ -748,6 +752,8 @@ function startWebServer({ waLink = () => null, db, events, calendar, summarizeCh
     }
   });
   server.listen(PORT, HOST, () => log(`Web dashboard: http://localhost:${PORT}`));
+  // Downloads and the one-click setup that a restart interrupted carry on by themselves.
+  if (localai?.resumePending) localai.resumePending({ onSetupReady: switchToBuiltin }).catch((e) => logError(`Local AI resume failed: ${e.message}`));
   return server;
 }
 

@@ -27,8 +27,13 @@ const DATA_DIR = process.env.BOT_DATA_DIR
 // The installed app has its own port, so it never collides with a development bot on 3000.
 const PORT = Number(process.env.WEB_PORT || (app.isPackaged ? 3210 : 3000));
 const DASHBOARD_URL = `http://127.0.0.1:${PORT}`;
-const ICON_PATH = path.join(ENGINE_DIR, 'public', 'app.ico');
-const START_HIDDEN = process.argv.includes('--hidden');
+const IS_MAC = process.platform === 'darwin';
+const OS_NAME = IS_MAC ? 'ה-Mac' : 'Windows';
+// Windows: the .ico for window + tray. macOS: the window/Dock icon comes from the app bundle (.icns); the menu-bar
+// icon is the PNG scaled down to menu-bar size.
+const ICON_PATH = path.join(ENGINE_DIR, 'public', IS_MAC ? 'icon-192.png' : 'app.ico');
+// Started at login: hidden (Windows passes --hidden; macOS login items cannot carry arguments, so ask macOS instead).
+let START_HIDDEN = process.argv.includes('--hidden');
 
 fs.mkdirSync(path.join(DATA_DIR, 'logs'), { recursive: true });
 
@@ -65,7 +70,7 @@ let tray = null;
 let quitting = false;
 
 const LOADING_HTML = 'data:text/html;charset=utf-8,' + encodeURIComponent(
-  '<!doctype html><meta charset="utf-8"><body style="margin:0;height:100vh;display:grid;place-items:center;background:#0b1020;color:#cbd5e1;font:18px Segoe UI,Arial" dir="rtl">' +
+  '<!doctype html><meta charset="utf-8"><body style="margin:0;height:100vh;display:grid;place-items:center;background:#0b1020;color:#cbd5e1;font:18px -apple-system,Segoe UI,Arial" dir="rtl">' +
   '<div style="text-align:center"><div style="font-size:28px;margin-bottom:12px">מפעיל את הבוט…</div><div>זה לוקח כמה שניות</div></div>');
 
 function dashboardAnswers() {
@@ -86,8 +91,8 @@ async function loadDashboardWhenReady() {
   }
   if (win && !quitting) {
     win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(
-      '<!doctype html><meta charset="utf-8"><body style="margin:0;height:100vh;display:grid;place-items:center;background:#0b1020;color:#fca5a5;font:18px Segoe UI,Arial" dir="rtl">' +
-      '<div style="text-align:center"><div style="font-size:26px;margin-bottom:12px">הבוט לא הגיב</div><div>בדוק את הקובץ logs\\engine-stdio.log בתיקיית הנתונים, או הפעל מחדש מאייקון המגש.</div></div>'));
+      '<!doctype html><meta charset="utf-8"><body style="margin:0;height:100vh;display:grid;place-items:center;background:#0b1020;color:#fca5a5;font:18px -apple-system,Segoe UI,Arial" dir="rtl">' +
+      `<div style="text-align:center"><div style="font-size:26px;margin-bottom:12px">הבוט לא הגיב</div><div>בדוק את הקובץ ${path.join('logs', 'engine-stdio.log')} בתיקיית הנתונים, או הפעל מחדש מ${IS_MAC ? 'האייקון בשורת התפריטים' : 'אייקון המגש'}.</div></div>`));
   }
 }
 
@@ -97,7 +102,7 @@ function createWindow() {
     height: 900,
     show: !START_HIDDEN,
     backgroundColor: '#0b1020',
-    icon: fs.existsSync(ICON_PATH) ? ICON_PATH : undefined,
+    icon: !IS_MAC && fs.existsSync(ICON_PATH) ? ICON_PATH : undefined,
     title: 'WhatsApp Summary',
     webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true },
   });
@@ -116,7 +121,7 @@ function createWindow() {
     }
   });
 
-  // Closing the window hides it to the tray; the bot keeps running.
+  // Closing the window hides it to the tray / menu bar; the bot keeps running (on macOS the Dock icon brings it back).
   win.on('close', (e) => {
     if (!quitting) { e.preventDefault(); win.hide(); }
   });
@@ -125,6 +130,7 @@ function createWindow() {
 
 function showWindow() {
   if (!win) createWindow();
+  if (IS_MAC) app.dock?.show();
   if (win.isMinimized()) win.restore();
   win.show();
   win.focus();
@@ -149,11 +155,11 @@ function updateTray() {
     { label: 'הפעל מחדש את הבוט', click: () => { logStdio('[shell] restart requested from tray'); supervisor.restart(); } },
     { label: 'פתח את תיקיית הנתונים', click: () => shell.openPath(DATA_DIR) },
     {
-      label: autostartOk ? 'הפעל עם Windows' : 'הפעל עם Windows (זמין רק אחרי התקנה)',
+      label: autostartOk ? `הפעל עם ${OS_NAME}` : `הפעל עם ${OS_NAME} (זמין רק אחרי התקנה)`,
       type: 'checkbox',
       enabled: autostartOk,
       checked: autostartOk && app.getLoginItemSettings().openAtLogin,
-      click: (item) => app.setLoginItemSettings({ openAtLogin: item.checked, args: ['--hidden'] }),
+      click: (item) => setAutostart(item.checked),
     },
     { type: 'separator' },
     { label: 'יציאה (עוצר גם את הבוט)', click: () => app.quit() },
@@ -163,28 +169,44 @@ function updateTray() {
 }
 
 function createTray() {
-  const img = fs.existsSync(ICON_PATH) ? nativeImage.createFromPath(ICON_PATH) : nativeImage.createEmpty();
+  let img = fs.existsSync(ICON_PATH) ? nativeImage.createFromPath(ICON_PATH) : nativeImage.createEmpty();
+  if (IS_MAC && !img.isEmpty()) img = img.resize({ width: 18, height: 18, quality: 'best' });
   tray = new Tray(img);
-  tray.on('click', showWindow);
+  // macOS opens the menu on click by itself; Windows opens the window on click and the menu on right-click.
+  if (!IS_MAC) tray.on('click', showWindow);
   updateTray();
 }
 
 // ---------- 7. Lifecycle ----------
 app.on('second-instance', showWindow);
+app.on('activate', showWindow); // macOS: clicking the Dock icon brings the hidden window back
 
-// Start with Windows by default (installed app only), once: if the user turns it off in the tray, it stays off.
+function setAutostart(on) {
+  // macOS: a login item (System Settings > General > Login Items); it cannot carry --hidden, see START_HIDDEN.
+  app.setLoginItemSettings(IS_MAC ? { openAtLogin: on } : { openAtLogin: on, args: ['--hidden'] });
+}
+
+// Start with Windows / at Mac login by default (installed app only), once: if the user turns it off in the tray, it stays off.
 function enableAutostartOnce() {
   if (!app.isPackaged) return;
   const marker = path.join(DATA_DIR, '.autostart-default');
   if (fs.existsSync(marker)) return;
   try {
-    app.setLoginItemSettings({ openAtLogin: true, args: ['--hidden'] });
+    setAutostart(true);
     fs.mkdirSync(DATA_DIR, { recursive: true });
     fs.writeFileSync(marker, new Date().toISOString());
   } catch (err) { logStdio(`[shell] autostart default failed: ${err.message}`); }
 }
 
 app.whenReady().then(() => {
+  if (IS_MAC && app.isPackaged) {
+    try { if (app.getLoginItemSettings().wasOpenedAtLogin) START_HIDDEN = true; } catch { /* older macOS */ }
+  }
+  if (IS_MAC && START_HIDDEN) app.dock?.hide(); // started at login: only the menu-bar icon until the window is opened
+  if (IS_MAC && !app.isPackaged) {
+    const big = path.join(ENGINE_DIR, 'public', 'icon-512.png');
+    if (fs.existsSync(big)) app.dock?.setIcon(big);
+  }
   enableAutostartOnce();
   createTray();
   createWindow();

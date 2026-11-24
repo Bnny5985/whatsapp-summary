@@ -120,7 +120,8 @@ class Supervisor extends EventEmitter {
       // On Windows a plain kill() is already forceful; this is the safety net for a stuck process tree.
       const force = setTimeout(() => {
         try {
-          spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true });
+          if (process.platform === 'win32') spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true });
+          else child.kill('SIGKILL'); // macOS: SIGTERM was ignored or the engine is stuck
         } catch { /* ignore */ }
         setTimeout(done, 1500);
       }, graceMs);

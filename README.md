@@ -2,7 +2,7 @@
 
 # סיכומי וואטסאפ
 
-תוכנה ל-Windows שקוראת את שיחות הוואטסאפ שלך (**קריאה בלבד**), שומרת אותן **רק במחשב שלך**, ומסכמת בשבילך את הקבוצות והשיחות שבחרת: מה החליטו, מה צריך לעשות, אילו אירועים קובעים, ומה בן/בת הזוג ביקש/ה ממך. אפשר לראות הכול גם בטלפון ולקבל סיכום יומי לטלגרם.
+תוכנה למחשב (Windows או Mac) שקוראת את שיחות הוואטסאפ שלך (**קריאה בלבד**), שומרת אותן **רק במחשב שלך**, ומסכמת בשבילך את הקבוצות והשיחות שבחרת: מה החליטו, מה צריך לעשות, אילו אירועים קובעים, ומה בן/בת הזוג ביקש/ה ממך. אפשר לראות הכול גם בטלפון ולקבל סיכום יומי לטלגרם.
 
 <p align="center"><img src="docs/images/app-dashboard.png" alt="המסך הראשי של התוכנה" width="860"></p>
 
@@ -23,13 +23,15 @@
 
 ## לפני שמתחילים
 
-- מחשב עם **Windows 10 או 11**.
+- מחשב עם **Windows 10 או 11**, או **Mac** עם macOS 13 (Ventura) ומעלה (Mac עם שבב Apple M1 ומעלה, או Mac ישן יותר עם מעבד Intel).
 - **וואטסאפ בטלפון** (התוכנה מתחברת אליו כמו "וואטסאפ ווב").
 - כדי שהסיכומים יעבדו צריך "מוח" (מודל AI). יש שתי אפשרויות, ובשתיהן התוכנה מסבירה בדיוק מה ללחוץ:
-  - **מודל שרץ על המחשב שלך** (מומלץ, הכי פרטי): צריך כרטיס מסך טוב או הרבה זיכרון. התוכנה בודקת לבד אם המחשב מתאים.
+  - **מודל שרץ על המחשב שלך** (מומלץ, הכי פרטי): צריך כרטיס מסך טוב או הרבה זיכרון (ב-Mac עם שבב M: לפחות 16GB זיכרון). התוכנה בודקת לבד אם המחשב מתאים.
   - **שירות בענן** (למשל Google Gemini): עובד בכל מחשב, צריך "מפתח" חינמי מהאתר שלהם.
 
 ## שלב 1: הורדה והתקנה
+
+### ב-Windows
 
 1. נכנסים לדף **[Releases](../../releases/latest)** של הפרויקט.
 2. מורידים את הקובץ **`WhatsApp-Summary-Setup-…exe`**.
@@ -38,6 +40,25 @@
 5. בסוף ההתקנה התוכנה נפתחת לבד, ונוצר אייקון על שולחן העבודה.
 
 התוכנה **עולה לבד עם Windows** וממשיכה לעבוד ברקע גם כשסוגרים את החלון (יש לה אייקון קטן ליד השעון). כך היא לא מפספסת הודעות.
+
+### ב-Mac
+
+1. נכנסים לדף **[Releases](../../releases/latest)** של הפרויקט ומורידים את הקובץ שמתאים ל-Mac שלך:
+   - **`WhatsApp-Summary-…-mac-arm64.dmg`** ל-Mac עם שבב Apple (M1, M2, M3, M4 ומעלה). רוב המחשבים מ-2021 והלאה.
+   - **`WhatsApp-Summary-…-mac-x64.dmg`** ל-Mac ישן עם מעבד Intel.
+   - לא בטוחים? תפריט Apple () ← **אודות ה-Mac הזה**. אם כתוב "שבב Apple M…" בוחרים arm64, אם כתוב "Intel" בוחרים x64.
+2. לוחצים פעמיים על הקובץ שהורד. נפתח חלון: **גוררים את האייקון של WhatsApp Summary לתיקיית "יישומים"** (Applications).
+3. **בפעם הראשונה** פותחים את התוכנה כך, כי היא לא חתומה אצל Apple (זה בגלל שהיא פרויקט חדש וחינמי, לא כי יש בה בעיה):
+   - בתיקיית "יישומים" עושים **לחיצה ימנית** (או Control + לחיצה) על WhatsApp Summary ← **פתח** ← ובחלון שנפתח שוב **פתח**.
+   - ב-macOS 15 (Sequoia) ומעלה הכפתור הזה לא מופיע: לוחצים **סיום** (Done), נכנסים ל**הגדרות המערכת ← פרטיות ואבטחה**, גוללים למטה עד "WhatsApp Summary נחסם…" ולוחצים **פתח בכל זאת** (Open Anyway), ומאשרים עם הסיסמה של ה-Mac.
+   - אם מופיעה הודעה שהקובץ **"פגום"** ואין אפשרות לפתוח: פותחים את **Terminal**, מדביקים את השורה הבאה ולוחצים Enter, ואז פותחים שוב:
+
+     ```bash
+     xattr -cr "/Applications/WhatsApp Summary.app"
+     ```
+4. מהפעם השנייה התוכנה נפתחת רגיל, מה-Launchpad או מתיקיית "יישומים".
+
+התוכנה **עולה לבד כשנכנסים ל-Mac** וממשיכה לעבוד ברקע גם כשסוגרים את החלון. יש לה אייקון קטן ב**שורת התפריטים למעלה** (ליד השעון), ולחיצה על האייקון שלה ב-Dock פותחת את החלון שוב. כדי לסגור אותה לגמרי: באייקון שבשורת התפריטים ← **יציאה**, או Command + Q.
 
 ## שלב 2: חיבור לוואטסאפ
 
@@ -172,7 +193,7 @@
 <p align="center"><img src="docs/images/phone-offline.png" alt="האפליקציה כשהמחשב לא זמין" width="260"></p>
 
 **אם זה לא עובד:**
-- המחשב צריך להיות **דלוק** והתוכנה פועלת (היא עולה לבד עם Windows). מחשב במצב שינה לא עונה.
+- המחשב צריך להיות **דלוק** והתוכנה פועלת (היא עולה לבד עם Windows או כשנכנסים ל-Mac). מחשב במצב שינה לא עונה. ב-Mac נייד כדאי להשאיר אותו מחובר לחשמל.
 - במחשב, במסך "גישה מהטלפון", צריך לראות **🟢 פועל ומוכן לחיבור מכל מקום**. אם כתוב משהו אחר, לוחצים **"בדוק שוב"**.
 - אם כתוב "הקוד פג" או "הקוד כבר לא בתוקף": לוחצים שוב **"צמד טלפון חדש"** וסורקים את הקוד החדש.
 - אם האפליקציה כותבת שהמחשב ביטל את הגישה: מצמדים מחדש מהמחשב.
@@ -183,7 +204,7 @@
 
 **במחשב:**
 
-1. לוחצים על **"הורדת Tailscale"**, מורידים את הגרסה ל-Windows ומתקינים כמו כל תוכנה.
+1. לוחצים על **"הורדת Tailscale"**, מורידים את הגרסה ל-Windows או ל-Mac ומתקינים כמו כל תוכנה.
 2. בסוף ההתקנה נפתח דף התחברות. מתחברים עם **חשבון Google** (או Microsoft / Apple). זה בחינם. **זכרו באיזה חשבון התחברתם.**
 3. חוזרים לתוכנה ולוחצים **"בדוק שוב"**, ואז **"📱 הפעל גישה מהטלפון"**.
 4. **רק בפעם הראשונה:** ייתכן שיופיע כפתור **"פתח את דף האישור"**. לוחצים עליו, בדף שנפתח לוחצים **Enable**, וחוזרים ללחוץ שוב "הפעל".
@@ -214,7 +235,7 @@
 
 ## התאמה אישית
 
-- **מראה:** כהה / בהיר / לפי Windows, צבע הדגשה, גודל טקסט, וכיבוי אפקטים (למחשבים חלשים).
+- **מראה:** כהה / בהיר / לפי המערכת (Windows או macOS), צבע הדגשה, גודל טקסט, וכיבוי אפקטים (למחשבים חלשים).
 - **מסך ראשי:** בוחרים אילו חלקים יופיעו, באיזה סדר, ומה יופיע רק כשיש בו משהו חדש.
 
 <p align="center">
@@ -232,14 +253,18 @@
 
 - **"וואטסאפ לא מחובר":** במצב מערכת לוחצים "קישור מחדש" וחוזרים על שלב 2.
 - **אין סיכומים:** בדקו בהגדרות ← מודלים מקומיים שיש מודל פעיל, או שהוגדר ספק ענן.
-- **התוכנה לא עלתה אחרי הפעלה מחדש של המחשב:** לחיצה ימנית על האייקון ליד השעון ← לוודא ש"הפעל עם Windows" מסומן.
+- **התוכנה לא עלתה אחרי הפעלה מחדש של המחשב:** לחיצה ימנית על האייקון ליד השעון ← לוודא ש"הפעל עם Windows" מסומן. ב-Mac: לחיצה על האייקון בשורת התפריטים ← לוודא ש"הפעל עם ה-Mac" מסומן, ובהגדרות המערכת ← כללי ← **פריטי התחברות** לוודא ש-WhatsApp Summary מופיע ומופעל.
 - **איפה הנתונים?** הגדרות ← מצב מערכת ← "פתח את תיקיית הנתונים".
-- **Windows שואל אם לאפשר ל-`p2p-bridge` גישה לרשת:** זה רכיב החיבור לטלפון. מאשרים ל**רשתות פרטיות**. אם לא מאשרים, הטלפון עדיין מתחבר, אבל דרך שרת מתווך מוצפן, ולכן לפעמים לאט יותר.
+- **Windows (או חומת האש של ה-Mac) שואל אם לאפשר ל-`p2p-bridge` גישה לרשת / לקבל חיבורים נכנסים:** זה רכיב החיבור לטלפון. מאשרים ל**רשתות פרטיות**. אם לא מאשרים, הטלפון עדיין מתחבר, אבל דרך שרת מתווך מוצפן, ולכן לפעמים לאט יותר.
 - **הטלפון לא מתחבר:** הגדרות ← גישה מהטלפון. צריך לראות שם **🟢 פועל ומוכן לחיבור מכל מקום** ואת הטלפון ברשימה. אם הוא לא ברשימה, מצמדים אותו שוב.
 
 ## הסרה
 
-הגדרות של Windows ← **אפליקציות** ← **WhatsApp Summary** ← הסרה. כדי למחוק גם את הנתונים, מוחקים את התיקייה `%APPDATA%\WhatsApp Summary`. ובטלפון: וואטסאפ ← מכשירים מקושרים ← מנתקים את המחשב. אם התקנתם את אפליקציית הטלפון, מוחקים אותה כמו כל אפליקציה.
+**Windows:** הגדרות של Windows ← **אפליקציות** ← **WhatsApp Summary** ← הסרה. כדי למחוק גם את הנתונים, מוחקים את התיקייה `%APPDATA%\WhatsApp Summary`.
+
+**Mac:** סוגרים את התוכנה (שורת התפריטים ← יציאה), ובתיקיית "יישומים" גוררים את WhatsApp Summary לפח. כדי למחוק גם את הנתונים: ב-Finder ← תפריט **מעבר** ← **מעבר לתיקייה…** ← `~/Library/Application Support/WhatsApp Summary` ← מוחקים את התיקייה. ובהגדרות המערכת ← כללי ← פריטי התחברות אפשר להסיר אותה מהרשימה.
+
+ובשני המקרים: בטלפון: וואטסאפ ← מכשירים מקושרים ← מנתקים את המחשב. אם התקנתם את אפליקציית הטלפון, מוחקים אותה כמו כל אפליקציה.
 
 </div>
 
@@ -247,13 +272,13 @@
 
 ## Technical notes (English)
 
-A Windows desktop app (Electron shell + Node engine) that reads WhatsApp through a **read-only** layer on
+A desktop app for Windows and macOS (Electron shell + Node engine) that reads WhatsApp through a **read-only** layer on
 [Baileys](https://github.com/WhiskeySockets/Baileys), keeps everything in local SQLite files, and summarizes the chats
 the user marks with a local model (built-in llama.cpp, LM Studio, Ollama) or an OpenAI-compatible cloud API.
 
 ### Build from source
 
-Requires Node.js 20 or newer on Windows, and [Rust](https://rustup.rs) (stable) for the phone bridge.
+Requires Node.js 20 or newer on Windows or macOS, and [Rust](https://rustup.rs) (stable) for the phone bridge.
 
 ```bash
 npm install
@@ -271,9 +296,24 @@ npm run build:p2p
 cd app && npm install && npm run dist
 ```
 
-`npm run dist` collects the engine into `build/engine` (`scripts/build-engine.js`), including `p2p-bridge.exe`, and builds
-the installer into `dist/`. Instead of building the bridge yourself you can download it from the `p2p-bridge` GitHub
+`npm run dist` (Windows) collects the engine into `build/engine` (`scripts/build-engine.js`), including `p2p-bridge.exe`, and builds
+the installer into `dist/`. On a Mac run `npm run dist:mac` instead: same engine folder with the `p2p-bridge` binary, and
+`dist/WhatsApp-Summary-<version>-mac-<arch>.dmg` for the Mac's own processor (`arm64` on Apple Silicon, `x64` on Intel).
+Native parts (sqlite3, the bridge) are built for the machine you build on, so each architecture is built on its own Mac;
+the release workflow does that on `macos-latest` (arm64) and `macos-15-intel` (x64). Instead of building the bridge yourself you can download it from the `p2p-bridge` GitHub
 Actions run and point `P2P_BRIDGE_EXE` at it. The phone app has its own guide: [`mobile/README.md`](mobile/README.md).
+
+### macOS specifics
+
+- The dmg is **not signed with an Apple Developer ID and not notarized** (ad-hoc signature only; that needs a paid Apple
+  Developer account). Gatekeeper therefore asks for confirmation on first launch (right-click > Open, or System Settings >
+  Privacy & Security > Open Anyway on macOS 15+). It is not distributed through the Mac App Store.
+- Data lives in `~/Library/Application Support/WhatsApp Summary/data` (Electron `userData`). The window hides on close, the
+  Dock icon and the menu-bar icon bring it back, and quitting (menu bar > Quit or Cmd+Q) stops the engine.
+- Autostart is a macOS login item (`app.setLoginItemSettings`); a launch at login starts hidden (menu-bar icon only).
+- Built-in local AI downloads llama.cpp's `llama-<build>-bin-macos-<arch>.tar.gz` from its GitHub releases (checked against
+  the SHA-256 GitHub publishes). On Apple Silicon it runs on the GPU through Metal and treats about 2/3 of the RAM
+  (3/4 above 36 GB) as graphics memory when it recommends models; the "CPU only" choice runs the same build with `-ngl 0`.
 
 ### Tests
 
@@ -303,7 +343,7 @@ The phone-app tests drive the real bridge, so build it first (`cargo build` in `
 
 | Path | What |
 |---|---|
-| `app/` | Electron shell: window, tray, autostart, engine supervisor |
+| `app/` | Electron shell: window, tray / menu-bar icon, autostart (login item on macOS), engine supervisor |
 | `index.js` | the engine: message handling, summaries, partner card, care trackers, reminders, backups |
 | `web.js`, `ui.html`, `public/` | local dashboard server (127.0.0.1 only) and its UI, settings window and tracker cards |
 | `db.js` | SQLite storage (work database) |

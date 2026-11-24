@@ -24,19 +24,27 @@ for (const f of ENGINE_FILES) fs.copyFileSync(path.join(ROOT, f), path.join(OUT,
 for (const f of WA_FILES) fs.copyFileSync(path.join(ROOT, 'wa', f), path.join(OUT, 'wa', f));
 fs.cpSync(path.join(ROOT, 'public'), path.join(OUT, 'public'), { recursive: true });
 
-// The phone bridge (Rust, p2p-bridge/): a ready Windows binary next to the engine (p2p.js looks for it there).
-// P2P_BRIDGE_EXE points at a prebuilt one (e.g. from the GitHub Actions build); on Windows it is built here when missing.
+// The phone bridge (Rust, p2p-bridge/): a ready binary for this system next to the engine (p2p.js looks for it there).
+// Windows: p2p-bridge.exe, macOS: p2p-bridge. P2P_BRIDGE_EXE points at a prebuilt one (e.g. from the GitHub Actions
+// build); otherwise it is built here when missing. BUILD_ARCH (x64 | arm64) picks a cross-built macOS binary.
+const IS_WIN = process.platform === 'win32';
+const BRIDGE_NAME = IS_WIN ? 'p2p-bridge.exe' : 'p2p-bridge';
 const BRIDGE_DIR = path.join(ROOT, 'p2p-bridge');
+const ARCH = process.env.BUILD_ARCH || process.arch;
+const RUST_TARGET = IS_WIN ? 'x86_64-pc-windows-msvc' : process.platform === 'darwin' ? `${ARCH === 'arm64' ? 'aarch64' : 'x86_64'}-apple-darwin` : null;
 const bridgeCandidates = () => [
   process.env.P2P_BRIDGE_EXE,
-  path.join(BRIDGE_DIR, 'target', 'x86_64-pc-windows-msvc', 'release', 'p2p-bridge.exe'),
-  path.join(BRIDGE_DIR, 'target', 'release', 'p2p-bridge.exe'),
+  RUST_TARGET && path.join(BRIDGE_DIR, 'target', RUST_TARGET, 'release', BRIDGE_NAME),
+  ARCH === process.arch && path.join(BRIDGE_DIR, 'target', 'release', BRIDGE_NAME),
 ].filter((p) => p && fs.existsSync(p));
-if (!bridgeCandidates().length && process.platform === 'win32') run('npm run build:p2p', ROOT);
+if (!bridgeCandidates().length && ['win32', 'darwin'].includes(process.platform)) {
+  run(ARCH === process.arch ? 'npm run build:p2p' : `npm run build:p2p -- --target ${RUST_TARGET}`, ROOT);
+}
 const bridgeExe = bridgeCandidates()[0];
-if (!bridgeExe) throw new Error('p2p-bridge.exe is missing: run "npm run build:p2p" on Windows, or set P2P_BRIDGE_EXE to a prebuilt one (GitHub Actions artifact)');
-fs.copyFileSync(bridgeExe, path.join(OUT, 'p2p-bridge.exe'));
-console.log(`p2p-bridge.exe: ${path.relative(ROOT, bridgeExe)}`);
+if (!bridgeExe) throw new Error(`${BRIDGE_NAME} is missing: run "npm run build:p2p", or set P2P_BRIDGE_EXE to a prebuilt one (GitHub Actions artifact)`);
+fs.copyFileSync(bridgeExe, path.join(OUT, BRIDGE_NAME));
+if (!IS_WIN) fs.chmodSync(path.join(OUT, BRIDGE_NAME), 0o755);
+console.log(`${BRIDGE_NAME}: ${path.relative(ROOT, bridgeExe)}`);
 
 // Every engine file must be in the list above: a forgotten one would only fail on the user's computer.
 for (const f of ENGINE_FILES.filter((x) => x.endsWith('.js'))) {
@@ -58,11 +66,19 @@ fs.writeFileSync(path.join(OUT, 'package.json'), `${JSON.stringify({
 run('npm install --omit=dev --no-audit --no-fund', OUT);
 run('npm ci --omit=dev --ignore-scripts --no-audit --no-fund', path.join(OUT, 'wa')); // Baileys: exact pinned version, no install scripts
 
-// The database driver is native code: make sure the ready-made Windows binary really arrived.
+// The database driver is native code: make sure the ready-made binary for this system really arrived.
 const nodeFiles = [];
 const walk = (d) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else if (e.name.endsWith('.node')) nodeFiles.push(p); } };
 walk(path.join(OUT, 'node_modules', 'sqlite3'));
 if (!nodeFiles.length) throw new Error('sqlite3 native binary is missing from build/engine');
+// macOS: a binary for the wrong processor would only fail on the user's Mac (each arch is built on its own machine).
+if (process.platform === 'darwin') {
+  const want = ARCH === 'arm64' ? 'arm64' : 'x86_64';
+  for (const f of [...nodeFiles, path.join(OUT, BRIDGE_NAME)]) {
+    const archs = execSync(`lipo -archs "${f}"`).toString().trim().split(/\s+/);
+    if (!archs.includes(want)) throw new Error(`${path.relative(OUT, f)} is built for ${archs.join(', ')}, not ${want}`);
+  }
+}
 
 const size = (d) => fs.readdirSync(d, { withFileTypes: true }).reduce((n, e) => n + (e.isDirectory() ? size(path.join(d, e.name)) : fs.statSync(path.join(d, e.name)).size), 0);
 console.log(`\nbuild/engine ready: ${(size(OUT) / 1e6).toFixed(0)} MB, sqlite3 binary: ${path.relative(OUT, nodeFiles[0])}`);

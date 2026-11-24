@@ -62,6 +62,8 @@ const appSettings = require('./appsettings');
 // Under the desktop app the engine is restarted by exiting with code 3 (the app starts it again with the new settings).
 const SUPERVISED = process.env.BOT_SUPERVISED === '1';
 function restartSoon() { if (SUPERVISED) setTimeout(() => process.exit(3), 800); }
+// End of the one-click local AI setup: use the built-in engine from now on.
+function switchToBuiltin() { appSettings.updateEnv({ LOCAL_ENGINE: 'builtin' }); restartSoon(); }
 const SERVER_VERSION = 12; // bump together with UI_VERSION in ui.html
 const MEDIA_TYPES = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.ogg': 'audio/ogg' };
 const LISTEN_FLAGS = ['text', 'voice', 'images', 'links'];
@@ -238,7 +240,7 @@ function startWebServer({ waLink = () => null, db, events, calendar, summarizeCh
             if (p === 'benchmark') return send(res, 200, await localai.benchmark(b.role === 'agent' ? 'agent' : 'main'));
             if (p === 'setup') {
               // One click: the engine + the recommended models; when everything is in place, switch to the built-in engine and restart.
-              const run = localai.autoSetup({ main: b.main, agent: b.agent, variant: b.variant, onReady: () => { appSettings.updateEnv({ LOCAL_ENGINE: 'builtin' }); restartSoon(); } });
+              const run = localai.autoSetup({ main: b.main, agent: b.agent, variant: b.variant, onReady: switchToBuiltin });
               return send(res, 200, run);
             }
             if (p === 'restart') { send(res, 200, { ok: true, restarting: SUPERVISED }); return restartSoon(); }
@@ -749,6 +751,8 @@ function startWebServer({ waLink = () => null, db, events, calendar, summarizeCh
     }
   });
   server.listen(PORT, HOST, () => log(`Web dashboard: http://localhost:${PORT}`));
+  // Downloads and the one-click setup that a restart interrupted carry on by themselves.
+  if (localai?.resumePending) localai.resumePending({ onSetupReady: switchToBuiltin }).catch((e) => logError(`Local AI resume failed: ${e.message}`));
   return server;
 }
 

@@ -326,8 +326,8 @@
     const bench = st.state.bench || {};
     area.innerHTML = `
       <div class="st-sec st-rec" id="recBox"><h4>⭐ המלצה למחשב שלך</h4><div class="skeleton">סורק את המחשב ובודק אילו מודלים חדשים יצאו…</div></div>
-      <div class="st-sec"><h4>הורדות</h4><div id="jobs" class="st-list"></div></div>
-      <div class="st-sec"><h4>מודלים מותקנים</h4>${live ? `<div class="st-row meta" style="margin-bottom:8px">ראשי: ${badge(srv.main)} · סוכן: ${badge(srv.agent)}</div>` : '<p class="meta">המנוע המובנה עוד לא פעיל. הוא יופעל אוטומטית בסוף ההתקנה בלחיצה אחת.</p>'}
+      <div class="st-sec"><h4>הורדות</h4><div id="jobs" class="st-list"></div><p class="meta" style="margin:6px 0 0">הורדה שהתחילה ממשיכה לבד מאיפה שנעצרה, גם אם התוכנה מופעלת מחדש.</p></div>
+      <div class="st-sec"><h4>מודלים מותקנים</h4>${live ? `<div class="st-row meta" style="margin-bottom:8px">ראשי: ${badge(srv.main)} · סוכן: ${badge(srv.agent)}</div>` : (st.installed.length ? '<p class="meta">יש מודלים מוכנים, אבל המנוע המובנה עוד לא פעיל: לוחצים <b>שמור והפעל</b> בהגדרות המנוע למטה.</p>' : '<p class="meta">המנוע המובנה עוד לא פעיל. הוא יופעל אוטומטית בסוף ההתקנה בלחיצה אחת.</p>')}
         <div class="st-list">${st.installed.length ? st.installed.map((m) => {
           const b = bench[m.file];
           return `<div class="st-item" style="flex-wrap:wrap"><div class="grow"><div class="t">${esc(m.repo.split('/')[1])} <span class="st-badge">${esc(m.quant)}</span>

@@ -276,15 +276,31 @@ function createLocalAI({ dir, log = () => {}, logError = () => {}, fetchImpl = g
   }
   const publicJob = (j) => ({ id: j.id, kind: j.kind, label: j.label, state: j.state, done: j.done, total: j.total, error: j.error, role: j.role, file: j.file });
 
+  // Downloads in progress are remembered in state.json, so an engine restart (saving settings, the restart button,
+  // a crash) does not lose them: resumePending() continues them from their .part files when the engine starts again.
+  const pendingDownloads = () => readState(dir).pending_downloads || {};
+  const rememberDownload = (local, entry) => writeState(dir, { pending_downloads: { ...pendingDownloads(), [local]: entry } });
+  const forgetDownload = (local) => { const p = { ...pendingDownloads() }; delete p[local]; writeState(dir, { pending_downloads: p }); };
+
+  /** The llama.cpp build this computer uses, downloaded too when it is missing (a model is no use without it). */
+  async function ensureRuntime() {
+    const v = (await hardware()).suggested_gpu;
+    if (runtimeExe(v) || !runtimeAssetRe(v, { platform, arch })) return null;
+    return installRuntime(v);
+  }
+
   /** Start downloading a model (and its vision add-on when there is one). Returns the job at once. */
   async function downloadModel({ repo, file, role }) {
     const info = await files(repo);
     const pick = info.options.find((o) => o.path === (file || info.recommended));
     if (!pick) throw new Error('לא נמצא קובץ מתאים להורדה במודל הזה');
     const local = `${repo.replace('/', '__')}__${path.basename(pick.path)}`;
-    if ([...jobs.values()].some((j) => j.file === local && ['downloading', 'verifying'].includes(j.state))) throw new Error('המודל הזה כבר בהורדה');
+    const running = [...jobs.values()].find((j) => j.file === local && ['downloading', 'verifying'].includes(j.state));
+    if (running) return publicJob(running); // already on its way (e.g. resumed after a restart): follow that one
     const job = newJob('model', `${repo.split('/')[1]} (${pick.quant})`, pick.size + (info.mmproj?.size || 0));
     Object.assign(job, { role: role === 'agent' ? 'agent' : 'main', file: local });
+    rememberDownload(local, { repo, file: pick.path, role: job.role });
+    ensureRuntime().catch((e) => logError(`llama.cpp download did not start: ${e.message}`));
     (async () => {
       try {
         await downloadFile(job, `https://huggingface.co/${repo}/resolve/main/${pick.path.split('/').map(encodeURIComponent).join('/')}`, path.join(modelsDir, local), pick.sha256, pick.size);
@@ -302,6 +318,7 @@ function createLocalAI({ dir, log = () => {}, logError = () => {}, fetchImpl = g
         fs.writeFileSync(path.join(modelsDir, `${local}.json`), JSON.stringify(meta, null, 2));
         job.state = 'done';
         job.done = job.total;
+        forgetDownload(local);
         log(`Model downloaded: ${repo} ${pick.quant}`);
         // The first model of each role becomes the active one.
         const st = readState(dir);
@@ -309,6 +326,8 @@ function createLocalAI({ dir, log = () => {}, logError = () => {}, fetchImpl = g
       } catch (e) {
         job.state = e.name === 'AbortError' ? 'cancelled' : 'error';
         job.error = e.name === 'AbortError' ? null : e.message;
+        // Cancelled by the user: forget it. A failed one (network) is tried again on the next start.
+        if (job.state === 'cancelled') forgetDownload(local);
         if (job.state === 'error') logError(`Model download failed (${repo}): ${e.message}`);
       }
     })();
@@ -341,6 +360,7 @@ function createLocalAI({ dir, log = () => {}, logError = () => {}, fetchImpl = g
   function autoSetup({ main, agent, variant, onReady }) {
     if (setupRun?.state === 'running') throw new Error('ההתקנה כבר רצה');
     setupRun = { state: 'running', step: 'מתחיל', error: null };
+    writeState(dir, { pending_setup: { main: main || null, agent: agent || null, variant: variant || null } });
     (async () => {
       try {
         const v = variant || (await hardware()).suggested_gpu;
@@ -352,9 +372,11 @@ function createLocalAI({ dir, log = () => {}, logError = () => {}, fetchImpl = g
           await waitJob(job);
           setActive(role, job.file);
         }
+        writeState(dir, { pending_setup: null });
         setupRun = { state: 'done', step: 'הסתיים', error: null };
         if (onReady) await onReady();
       } catch (e) {
+        writeState(dir, { pending_setup: null });
         setupRun = { state: 'error', step: setupRun.step, error: e.message };
         logError(`Local AI setup failed: ${e.message}`);
       }
@@ -521,6 +543,23 @@ function createLocalAI({ dir, log = () => {}, logError = () => {}, fetchImpl = g
     return publicJob(job);
   }
 
+  /**
+   * Engine start: continue what a restart interrupted - the one-click setup (it ends by switching to the built-in engine,
+   * onSetupReady) and every model download, each from its .part file.
+   */
+  async function resumePending({ onSetupReady } = {}) {
+    const st = readState(dir);
+    if (st.pending_setup) {
+      log('Local AI: continuing the setup that a restart interrupted');
+      autoSetup({ ...st.pending_setup, onReady: onSetupReady });
+    }
+    for (const [local, d] of Object.entries(st.pending_downloads || {})) {
+      if (fs.existsSync(path.join(modelsDir, local))) { forgetDownload(local); continue; }
+      try { await downloadModel(d); log(`Local AI: continuing the download of ${d.repo}`); }
+      catch (e) { logError(`Local AI: could not continue the download of ${d.repo}: ${e.message}`); }
+    }
+  }
+
   // ---------- servers ----------
   const helpCache = {};
   async function serverHelp(exe) {
@@ -611,7 +650,7 @@ function createLocalAI({ dir, log = () => {}, logError = () => {}, fetchImpl = g
     return { servers: { main: pub(servers.main), agent: pub(servers.agent) }, runtime: runtimeStatus(), jobs: [...jobs.values()].map(publicJob), state: readState(dir) };
   }
 
-  return { hardware, catalog, files, recommend, autoSetup, get setup() { return setupRun; }, benchmark, downloadModel, cancel, installed, setActive, removeModel, installRuntime, runtimeStatus, startServer, startConfigured, stopServer, stopAll, status, dir };
+  return { hardware, catalog, files, recommend, autoSetup, get setup() { return setupRun; }, benchmark, downloadModel, cancel, installed, setActive, removeModel, installRuntime, runtimeStatus, resumePending, startServer, startConfigured, stopServer, stopAll, status, dir };
 }
 
 /**

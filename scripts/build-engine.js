@@ -11,7 +11,7 @@ const OUT = path.join(ROOT, 'build', 'engine');
 
 const ENGINE_FILES = [
   'index.js', 'web.js', 'db.js', 'paths.js', 'appsettings.js', 'blocks.js', 'budget.js', 'calendar.js', 'events.js',
-  'care.js', 'feeding.js', 'links.js', 'localai.js', 'memory.js', 'providers.js', 'remote.js', 'router.js', 'telegram.js', 'ui.html',
+  'care.js', 'feeding.js', 'links.js', 'localai.js', 'memory.js', 'p2p.js', 'providers.js', 'remote.js', 'router.js', 'telegram.js', 'ui.html',
 ];
 const WA_FILES = ['archive.js', 'compat.js', 'index.js', 'ingest.js', 'normalize.js', 'readonly.js', 'source.js', 'package.json', 'package-lock.json'];
 const NOT_SHIPPED = []; // dev-only packages that must not go into the installer
@@ -23,6 +23,20 @@ fs.mkdirSync(path.join(OUT, 'wa'), { recursive: true });
 for (const f of ENGINE_FILES) fs.copyFileSync(path.join(ROOT, f), path.join(OUT, f));
 for (const f of WA_FILES) fs.copyFileSync(path.join(ROOT, 'wa', f), path.join(OUT, 'wa', f));
 fs.cpSync(path.join(ROOT, 'public'), path.join(OUT, 'public'), { recursive: true });
+
+// The phone bridge (Rust, p2p-bridge/): a ready Windows binary next to the engine (p2p.js looks for it there).
+// P2P_BRIDGE_EXE points at a prebuilt one (e.g. from the GitHub Actions build); on Windows it is built here when missing.
+const BRIDGE_DIR = path.join(ROOT, 'p2p-bridge');
+const bridgeCandidates = () => [
+  process.env.P2P_BRIDGE_EXE,
+  path.join(BRIDGE_DIR, 'target', 'x86_64-pc-windows-msvc', 'release', 'p2p-bridge.exe'),
+  path.join(BRIDGE_DIR, 'target', 'release', 'p2p-bridge.exe'),
+].filter((p) => p && fs.existsSync(p));
+if (!bridgeCandidates().length && process.platform === 'win32') run('npm run build:p2p', ROOT);
+const bridgeExe = bridgeCandidates()[0];
+if (!bridgeExe) throw new Error('p2p-bridge.exe is missing: run "npm run build:p2p" on Windows, or set P2P_BRIDGE_EXE to a prebuilt one (GitHub Actions artifact)');
+fs.copyFileSync(bridgeExe, path.join(OUT, 'p2p-bridge.exe'));
+console.log(`p2p-bridge.exe: ${path.relative(ROOT, bridgeExe)}`);
 
 // Every engine file must be in the list above: a forgotten one would only fail on the user's computer.
 for (const f of ENGINE_FILES.filter((x) => x.endsWith('.js'))) {

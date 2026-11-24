@@ -135,11 +135,45 @@
 
 ## שלב 8: לראות את התוכנה בטלפון
 
-אפשר לפתוח את התוכנה מהטלפון, **גם מחוץ לבית**, בצורה פרטית ומאובטחת. משתמשים באפליקציה חינמית בשם **Tailscale**: היא יוצרת "רשת פרטית" רק בין המכשירים שלך. אף אחד אחר לא יכול להיכנס, והתוכנה לא נחשפת לאינטרנט.
+אפשר לפתוח את התוכנה מהטלפון (אנדרואיד או אייפון), **גם מחוץ לבית**. אפליקציית הטלפון מתחברת **ישירות** למחשב שלך, בחיבור **מוצפן מקצה לקצה**. אין חשבון, ולא צריך להתקין שום דבר נוסף במחשב. רק טלפון שצימדת בסריקת קוד יכול להיכנס, והתוכנה לא נחשפת לאינטרנט.
 
-ההגדרה נעשית פעם אחת, בערך 5 דקות. בתוכנה: הגדרות ← **גישה מהטלפון**. המסך מראה בכל רגע מה כבר עשית ומה השלב הבא.
+> **שימו לב:** אפליקציית הטלפון עדיין לא נמצאת ב-Google Play או ב-App Store. בינתיים בונים אותה מהקוד שבתיקייה [`mobile/`](mobile/README.md). עוזרים לנו לבדוק? יש [רשימת בדיקה קצרה](docs/TESTING-phone.md).
 
-<p align="center"><img src="docs/images/settings-phone.png" alt="הגדרות: גישה מהטלפון" width="820"></p>
+**במחשב:** הגדרות ← **גישה מהטלפון**.
+
+1. לוחצים **"📱 הפעל גישה מהאפליקציה"** (פעם אחת בלבד).
+2. לוחצים **"➕ צמד טלפון חדש"**. מופיע קוד QR. הוא בתוקף **2 דקות** ומתאים לטלפון **אחד** בלבד.
+
+<p align="center"><img src="docs/images/settings-phone-pair.png" alt="הגדרות: צימוד טלפון חדש עם קוד QR" width="820"></p>
+
+**בטלפון:**
+
+1. פותחים את האפליקציה **סיכומי וואטסאפ** ולוחצים **"📷 סרוק קוד QR מהמחשב"**.
+2. מאשרים גישה למצלמה, ומכוונים אותה לקוד שעל המסך של המחשב.
+3. זהו. האפליקציה נפתחת ישר לתוכנה, ובכל פעם הבאה היא תיפתח ישר לשם.
+
+<p align="center">
+  <img src="docs/images/phone-pair.png" alt="האפליקציה בטלפון: מסך הצימוד" width="260">
+  <img src="docs/images/phone-app.png" alt="התוכנה בטלפון" width="260">
+</p>
+
+כל הטלפונים שצימדת מופיעים במחשב, באותו מסך. לידם רואים אם הם מחוברים עכשיו, ויש כפתור **"בטל"** שמנתק טלפון מיד (למשל אם הטלפון אבד).
+
+<p align="center"><img src="docs/images/settings-phone.png" alt="הגדרות: הטלפונים המצומדים" width="820"></p>
+
+**כשהמחשב לא זמין** (כבוי, במצב שינה, או בלי אינטרנט), האפליקציה מציגה הודעה ומנסה להתחבר שוב לבד. יש בה כפתור **"נסה שוב"**, וכפתור **"החלף מחשב / נתק חיבור"** כדי לצמד את הטלפון למחשב אחר.
+
+<p align="center"><img src="docs/images/phone-offline.png" alt="האפליקציה כשהמחשב לא זמין" width="260"></p>
+
+**אם זה לא עובד:**
+- המחשב צריך להיות **דלוק** והתוכנה פועלת (היא עולה לבד עם Windows). מחשב במצב שינה לא עונה.
+- במחשב, במסך "גישה מהטלפון", צריך לראות **🟢 פועל ומוכן לחיבור מכל מקום**. אם כתוב משהו אחר, לוחצים **"בדוק שוב"**.
+- אם כתוב "הקוד פג" או "הקוד כבר לא בתוקף": לוחצים שוב **"צמד טלפון חדש"** וסורקים את הקוד החדש.
+- אם האפליקציה כותבת שהמחשב ביטל את הגישה: מצמדים מחדש מהמחשב.
+
+### דרך נוספת: Tailscale (בלי אפליקציה)
+
+מי שכבר משתמש ב-**Tailscale** (אפליקציה חינמית שיוצרת "רשת פרטית" בין המכשירים שלך) יכול להמשיך לפתוח את התוכנה בדפדפן של הטלפון. במסך "גישה מהטלפון" פותחים את **"דרך נוספת: Tailscale"**, והמסך מראה בכל רגע מה כבר עשית ומה השלב הבא.
 
 **במחשב:**
 
@@ -152,20 +186,9 @@
 **בטלפון:**
 
 1. מתקינים את האפליקציה **Tailscale** (מ-Google Play באנדרואיד, או מה-App Store באייפון).
-2. פותחים אותה ומתחברים **עם אותו חשבון בדיוק** שהתחברתם איתו במחשב.
-3. הטלפון מבקש אישור להוסיף "VPN": מאשרים. (זה לא מאט את האינטרנט, ורק הגישה לתוכנה עוברת דרכו.)
-4. פותחים את **Chrome** (באנדרואיד) או **Safari** (באייפון) ונכנסים לכתובת שקיבלתם.
-5. כדי שיהיה אייקון כמו אפליקציה רגילה:
-   - **אייפון (Safari):** כפתור השיתוף (ריבוע עם חץ למעלה) ← **הוספה למסך הבית**.
-   - **אנדרואיד (Chrome):** שלוש הנקודות ⋮ ← **הוספה למסך הבית** (או "התקנת אפליקציה").
-
-<p align="center"><img src="docs/images/phone-app.png" alt="התוכנה בטלפון" width="300"></p>
-
-**אם זה לא נפתח בטלפון:**
-- בדקו שבאפליקציית Tailscale בטלפון המתג **מופעל** (Connected).
-- בדקו שהתחברתם באותו חשבון גם במחשב וגם בטלפון.
-- המחשב צריך להיות **דלוק** והתוכנה פועלת (היא עולה לבד עם Windows). אם המחשב במצב שינה, הוא לא עונה.
-- במחשב: הגדרות ← גישה מהטלפון ← **בדוק שוב**. אם כל השלבים מסומנים ✅, הכול תקין.
+2. פותחים אותה ומתחברים **עם אותו חשבון בדיוק** שהתחברתם איתו במחשב, ומאשרים את בקשת ה-VPN.
+3. פותחים את **Chrome** (באנדרואיד) או **Safari** (באייפון) ונכנסים לכתובת שקיבלתם.
+4. כדי שיהיה אייקון כמו אפליקציה רגילה: בתפריט הדפדפן בוחרים **הוספה למסך הבית**.
 
 ## פרטיות ובטיחות
 
@@ -176,7 +199,8 @@
   - **משולב:** סיכומים כבדים יכולים לעבור לספק ענן, רק לפי ההרשאות שנתתם.
   - **ידני:** ענן רק כשאתם מבקשים עכשיו (שאלה או סיכום מלא). כל השאר נשאר במחשב.
 - לכל שיחה אפשר לסמן **"מקומי בלבד"**, ושיחות פרטיות נשלחות רק לספק שסימנתם אצלו שמותר.
-- **הגישה מהטלפון** פתוחה רק לחשבון ה-Tailscale שלך, דרך חיבור מוצפן. התוכנה לא פתוחה לאינטרנט.
+- **הגישה מהטלפון** פתוחה רק לטלפונים שצימדת בסריקת קוד (או, דרך Tailscale, רק לחשבון שלך), בחיבור מוצפן מקצה לקצה. התוכנה לא פתוחה לאינטרנט.
+- **מהטלפון אי אפשר לשנות הגדרות רגישות:** מפתחות AI, בוט הטלגרם, קישור הוואטסאפ, הגישה מהטלפון עצמה ומחיקת נתונים. את אלה משנים רק במחשב.
 - **מפתחות ה-API** נשמרים רק במחשב, ונשלחים רק לכתובת שהם נשמרו בשבילה.
 - **גיבוי אוטומטי** של קובץ הנתונים פעם ביום (נשמרים 7 אחרונים).
 
@@ -204,10 +228,12 @@
 - **אין סיכומים:** בדקו בהגדרות ← מודלים מקומיים שיש מודל פעיל, או שהוגדר ספק ענן.
 - **התוכנה לא עלתה אחרי הפעלה מחדש של המחשב:** לחיצה ימנית על האייקון ליד השעון ← לוודא ש"הפעל עם Windows" מסומן.
 - **איפה הנתונים?** הגדרות ← מצב מערכת ← "פתח את תיקיית הנתונים".
+- **Windows שואל אם לאפשר ל-`p2p-bridge` גישה לרשת:** זה רכיב החיבור לטלפון. מאשרים ל**רשתות פרטיות**. אם לא מאשרים, הטלפון עדיין מתחבר, אבל דרך שרת מתווך מוצפן, ולכן לפעמים לאט יותר.
+- **הטלפון לא מתחבר:** הגדרות ← גישה מהטלפון. צריך לראות שם **🟢 פועל ומוכן לחיבור מכל מקום** ואת הטלפון ברשימה. אם הוא לא ברשימה, מצמדים אותו שוב.
 
 ## הסרה
 
-הגדרות של Windows ← **אפליקציות** ← **WhatsApp Summary** ← הסרה. כדי למחוק גם את הנתונים, מוחקים את התיקייה `%APPDATA%\WhatsApp Summary`. ובטלפון: וואטסאפ ← מכשירים מקושרים ← מנתקים את המחשב.
+הגדרות של Windows ← **אפליקציות** ← **WhatsApp Summary** ← הסרה. כדי למחוק גם את הנתונים, מוחקים את התיקייה `%APPDATA%\WhatsApp Summary`. ובטלפון: וואטסאפ ← מכשירים מקושרים ← מנתקים את המחשב. אם התקנתם את אפליקציית הטלפון, מוחקים אותה כמו כל אפליקציה.
 
 </div>
 
@@ -221,7 +247,7 @@ the user marks with a local model (built-in llama.cpp, LM Studio, Ollama) or an 
 
 ### Build from source
 
-Requires Node.js 20 or newer on Windows.
+Requires Node.js 20 or newer on Windows, and [Rust](https://rustup.rs) (stable) for the phone bridge.
 
 ```bash
 npm install
@@ -232,10 +258,16 @@ cd wa && npm ci --ignore-scripts
 ```
 
 ```bash
+npm run build:p2p
+```
+
+```bash
 cd app && npm install && npm run dist
 ```
 
-`npm run dist` collects the engine into `build/engine` (`scripts/build-engine.js`) and builds the installer into `dist/`.
+`npm run dist` collects the engine into `build/engine` (`scripts/build-engine.js`), including `p2p-bridge.exe`, and builds
+the installer into `dist/`. Instead of building the bridge yourself you can download it from the `p2p-bridge` GitHub
+Actions run and point `P2P_BRIDGE_EXE` at it. The phone app has its own guide: [`mobile/README.md`](mobile/README.md).
 
 ### Tests
 
@@ -251,6 +283,16 @@ cd wa && npm test
 cd app && npm test
 ```
 
+```bash
+npm run test:p2p
+```
+
+```bash
+cd mobile/src-tauri && cargo test
+```
+
+The phone-app tests drive the real bridge, so build it first (`cargo build` in `p2p-bridge/`).
+
 ### Layout
 
 | Path | What |
@@ -263,7 +305,10 @@ cd app && npm test
 | `localai.js` | built-in local AI: hardware scan, live model catalog from Hugging Face, verified downloads, llama.cpp servers |
 | `providers.js`, `router.js` | cloud providers with privacy rules; small "agent" model for simple jobs |
 | `care.js`, `feeding.js` | trackers (medicines, feeding, pets, plants) and the meal-message parser |
-| `remote.js` | phone access through `tailscale serve` (only the owner's Tailscale login is let in) |
+| `p2p.js` | phone access through the built-in bridge: starts and supervises `p2p-bridge`, pairing, devices |
+| `p2p-bridge/` | Rust + [Iroh](https://iroh.computer): QUIC/TLS 1.3 tunnel from paired phones to the dashboard ([details](p2p-bridge/README.md)) |
+| `mobile/` | phone app (Tauri v2, Android + iOS): QR pairing, local proxy, the dashboard in a WebView ([details](mobile/README.md)) |
+| `remote.js` | the other way: phone access through `tailscale serve` (only the owner's Tailscale login is let in) |
 | `scripts/build-engine.js` | collects what the installed app needs into `build/engine` |
 
 ### Security model
@@ -273,10 +318,23 @@ cd app && npm test
   owner's Tailscale login (`WEB_ALLOWED_TS_USER`) is accepted. Any relayed request (a `*.ts.net` Host or
   forwarding headers) counts as remote whatever its `Host` says, is refused while phone access is off, and can
   never change settings that are limited to the computer itself.
-- Secrets (API keys, Telegram token, WhatsApp login keys) live in the per-user data folder, never in the repository.
+- Built-in phone access: `p2p-bridge` accepts Iroh connections (QUIC + TLS 1.3, end to end encrypted, relays never
+  see content) only from phone keys in its allowlist (`p2p/paired_devices.json`). A phone is added by scanning a QR code
+  with a one-time token that expires after 2 minutes. For every request the bridge drops any proxy/identity headers the
+  phone sent, refuses a `Host` that is not the phone's own loopback, and adds `X-Remote-Peer-Id` (the key proven by the
+  handshake) and `X-P2P-Proxy-Secret` (made fresh on every engine start and passed to the bridge in its environment only).
+  `web.js` treats such requests as remote: wrong or missing secret = refused, phone access off = refused, and they
+  cannot change computer-only settings (AI keys and providers, Telegram, WhatsApp linking, phone access, AI installs,
+  deleting data). Revoking a phone closes its open connections at once.
+- The phone app serves the dashboard to its WebView from `127.0.0.1` on the phone. Because other apps on the phone can
+  reach that address too, the app's proxy requires its exact `Host` and a per-launch HttpOnly cookie that only the
+  WebView receives, and strips that cookie before anything leaves the phone. Only the bundled pairing screen can call
+  the app's own commands; the dashboard page cannot.
+- Secrets (API keys, Telegram token, WhatsApp login keys, the bridge's and the phone's Iroh keys) live in per-user data
+  folders, never in the repository.
 - Privacy mode `local` blocks every request to a non-local model, including the main model and cloud transcription.
 
 ### Notes
 
-This is a personal project and is not affiliated with WhatsApp, Meta, Telegram or Tailscale. It uses an unofficial
+This is a personal project and is not affiliated with WhatsApp, Meta, Telegram, Tailscale or n0 (Iroh). It uses an unofficial
 client library (Baileys); using unofficial clients may be against WhatsApp's terms of service, so use it at your own risk.

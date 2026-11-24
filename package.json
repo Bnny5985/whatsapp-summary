@@ -4,7 +4,9 @@
   "description": "WhatsApp summaries on your own computer: read-only, local-first",
   "main": "index.js",
   "scripts": {
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "build:p2p": "cargo build --release --locked --manifest-path p2p-bridge/Cargo.toml",
+    "test:p2p": "cargo test --locked --manifest-path p2p-bridge/Cargo.toml"
   },
   "keywords": [],
   "author": "",
@@ -13,6 +15,7 @@
   "dependencies": {
     "dotenv": "^18.0.4",
     "openai": "^7.23.0",
+    "qrcode-generator": "2.0.4",
     "sqlite": "^5.1.1",
     "sqlite3": "^6.0.1"
   },

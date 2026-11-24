@@ -273,6 +273,7 @@ function startWebServer({ waLink = () => null, db, events, calendar, summarizeCh
       // ---- phone access through the built-in bridge (p2p.js) - changed only from this computer (see COMPUTER_ONLY) ----
       if (url.pathname.startsWith('/api/p2p')) {
         try {
+          if (req.method === 'GET' && url.pathname === '/api/p2p/app') return send(res, 200, await p2pLib.appDownload());
           if (req.method === 'GET' && url.pathname === '/api/p2p') return send(res, 200, { ...(await p2p.status()), local: isLocalRequest(req, host) });
           if (req.method === 'POST' && url.pathname === '/api/p2p/enable') {
             appSettings.updateEnv({ P2P_ENABLED: '1' }); process.env.P2P_ENABLED = '1';

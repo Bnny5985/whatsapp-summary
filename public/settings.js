@@ -581,16 +581,32 @@
         <h4>אפליקציית הטלפון (מומלץ)</h4>
         ${app}
         <ol class="meta" style="margin:12px 0 0;padding-inline-start:22px;line-height:2">
-          <li>מתקינים בטלפון את האפליקציה <b>סיכומי וואטסאפ</b>.</li>
+          <li>מתקינים בטלפון את האפליקציה <b>סיכומי וואטסאפ</b> (הקוד כאן למטה).</li>
           <li>כאן במחשב לוחצים <b>צמד טלפון חדש</b>.</li>
           <li>באפליקציה לוחצים <b>סרוק קוד QR מהמחשב</b> ומכוונים את המצלמה לקוד.</li>
         </ol>
         <p class="meta" style="margin:8px 0 0">המחשב צריך להיות דלוק והתוכנה פועלת (${STARTS_WITH()}).</p>
       </div>
+      <div class="st-sec" id="p2App"><h4>הורדת האפליקציה לאנדרואיד</h4><div class="skeleton">מכין קוד…</div></div>
       <details class="st-sec" id="tsBox"><summary style="cursor:pointer"><b>דרך נוספת: Tailscale</b></summary><div id="tsInner" style="margin-top:10px"></div></details>
       <div class="st-row"><button class="btn btn-ghost btn-sm" type="button" id="p2Re">בדוק שוב</button><span class="st-msg" id="p2Msg"></span></div>`;
     if (phoneFlash) { msg($('#p2Msg', el), phoneFlash, 'ok'); phoneFlash = ''; }
     $('#tsBox', el).addEventListener('toggle', (e) => { if (e.target.open && !$('#tsInner', el).childElementCount) renderTailscale($('#tsInner', el)).catch((err) => msg($('#p2Msg', el), err.message, 'bad')); }, { once: false });
+
+    // Download QR for the Android app: the phone's camera opens the link and downloads the .apk.
+    api('/api/p2p/app').then((d) => {
+      const box = $('#p2App', el); if (!box) return;
+      box.innerHTML = `<h4>הורדת האפליקציה לאנדרואיד</h4>
+        <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+          <div style="width:170px;flex:none;background:#fff;padding:8px;border-radius:12px">${d.svg}</div>
+          <div class="grow" style="min-width:200px"><ol class="meta" style="margin:0;padding-inline-start:22px;line-height:1.9">
+            <li>פותחים את המצלמה בטלפון ומכוונים לקוד.</li>
+            <li>לוחצים על הקישור שמופיע${d.direct ? ', והקובץ יורד' : ' ומורידים את הקובץ שנגמר ב-<b dir="ltr">.apk</b>'}${d.version ? ` (גרסה <span dir="ltr">${esc(d.version)}</span>)` : ''}.</li>
+            <li>פותחים את הקובץ ומאשרים <b>התקנה ממקור זה</b>. אם מופיעה אזהרה של Google Play Protect: <b>התקן בכל זאת</b> (האפליקציה עוד לא בחנות).</li>
+          </ol>
+          <p class="meta" style="margin:8px 0 0">לאייפון עוד אין אפליקציה. אפשר להשתמש ב-Tailscale (למטה).</p></div>
+        </div>`;
+    }).catch(() => { const box = $('#p2App', el); if (box) box.remove(); });
 
     const qrBox = $('#p2Qr', el);
     const showQr = (r) => {

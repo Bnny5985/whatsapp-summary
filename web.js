@@ -6,6 +6,7 @@ const path = require('path');
 const PORT = Number(process.env.WEB_PORT || 3000);
 const HOST = process.env.WEB_HOST || '127.0.0.1';
 const ALLOWED_HOSTS = ['localhost', '127.0.0.1', ...(process.env.WEB_ALLOWED_HOSTS || '').split(',').map((h) => h.trim()).filter(Boolean)];
+const p2pLib = require('./p2p');
 const UI_FILE = path.join(__dirname, 'ui.html');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const PUBLIC_TYPES = { '.png': 'image/png', '.webmanifest': 'application/manifest+json', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8' };
@@ -23,9 +24,25 @@ function isAllowedHost(host) {
 // from this computer. Its forwarding headers (or a *.ts.net Host) mark a request as remote, and the Host
 // header alone is never trusted: a relayed request that claims "Host: localhost" is still remote.
 const LOOPBACK = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
-const PROXY_HEADERS = ['tailscale-user-login', 'tailscale-user-name', 'x-forwarded-for', 'x-forwarded-host', 'x-forwarded-proto', 'forwarded'];
+// The built-in phone bridge (p2p.js) also relays from 127.0.0.1 and marks its requests with X-Remote-Peer-Id +
+// X-P2P-Proxy-Secret; any request carrying either header is remote, valid or not.
+const P2P_HEADERS = ['x-p2p-proxy-secret', 'x-remote-peer-id'];
+const PROXY_HEADERS = ['tailscale-user-login', 'tailscale-user-name', 'x-forwarded-for', 'x-forwarded-host', 'x-forwarded-proto', 'forwarded', ...P2P_HEADERS];
 const isProxied = (req, host) => host.endsWith('.ts.net') || PROXY_HEADERS.some((h) => req.headers[h] !== undefined);
 const isLocalRequest = (req, host) => !isProxied(req, host) && LOOPBACK.has(req.socket.remoteAddress) && ['localhost', '127.0.0.1'].includes(host);
+const isP2PRequest = (req) => P2P_HEADERS.some((h) => req.headers[h] !== undefined);
+
+// Changes that only the computer itself may make, whichever way a phone connects (Tailscale or the built-in bridge):
+// AI keys and providers, the Telegram bot, linking WhatsApp, phone access itself, installing AI engines, deleting data.
+const COMPUTER_ONLY = [
+  /^\/api\/settings\/(ai|telegram|local|cloud|cloud\/test|agents|general)$/,
+  /^\/api\/(remote|p2p)(\/|$)/,
+  /^\/api\/wa\/pair$/,
+  /^\/api\/ai\//,
+  /^\/api\/data\//,
+  /^\/api\/system\/(restart|open-folder)$/,
+];
+const isComputerOnly = (method, pathname) => method !== 'GET' && COMPUTER_ONLY.some((re) => re.test(pathname));
 
 function send(res, status, body, type = 'application/json; charset=utf-8', extraHeaders = {}) {
   res.writeHead(status, { 'Content-Type': type, 'Cache-Control': 'no-store', ...extraHeaders });
@@ -53,6 +70,8 @@ const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 function startWebServer({ waLink = () => null, db, events, calendar, summarizeChat, askQuestion, profileChatMembers, chatWithMemory, analyzeLove, setLoveChat, analyzeUnknown, backfillChat, analyzeWorkChat, syncAllChats, markLoveDone, memory, router, models, llm, log, logError, careApi = null, partnerApi = null, localai = null, systemStatus = null, backupNow = null, notifyOwner = null }) {
   const remote = require('./remote').createRemote({ port: PORT, log });
+  const p2p = p2pLib.createP2P({ port: PORT, dataDir: require('./paths').DATA_DIR, log });
+  if (p2pLib.enabled()) p2p.start();
   const server = http.createServer(async (req, res) => {
     try {
       // Block DNS-rebinding style access from other sites.
@@ -61,7 +80,10 @@ function startWebServer({ waLink = () => null, db, events, calendar, summarizeCh
 
       // Relayed requests (phone access through `tailscale serve`) must carry the owner's Tailscale login.
       // With no owner set (phone access never turned on in the settings) every relayed request is refused.
-      if (isProxied(req, host)) {
+      // Requests from the built-in bridge must carry this session's secret and a phone NodeId, and phone access must be on.
+      if (isP2PRequest(req)) {
+        if (!p2pLib.enabled() || !p2pLib.remotePeer(req)) return send(res, 403, { error: 'forbidden device' });
+      } else if (isProxied(req, host)) {
         const owner = allowedTsUser();
         const tsUser = String(req.headers['tailscale-user-login'] || '').trim().toLowerCase();
         if (!owner || tsUser !== owner) return send(res, 403, { error: 'forbidden user' });
@@ -79,6 +101,7 @@ function startWebServer({ waLink = () => null, db, events, calendar, summarizeCh
 
       const url = new URL(req.url, `http://${req.headers.host}`);
       const parts = url.pathname.split('/').filter(Boolean);
+      if (isComputerOnly(req.method, url.pathname) && !isLocalRequest(req, host)) return send(res, 403, { error: 'אפשר לשנות את זה רק במחשב עצמו' });
 
       // Static app files (manifest + icons) so the dashboard can be installed on a phone home screen.
       if (req.method === 'GET' && parts[0] === 'public' && parts.length === 2) {
@@ -242,6 +265,26 @@ function startWebServer({ waLink = () => null, db, events, calendar, summarizeCh
             await notifyOwner(`📱 הכתובת של התוכנה בטלפון (פותחים אחרי שמתחברים ל-Tailscale בטלפון):\n${s.url}`);
             return send(res, 200, { ok: true });
           }
+        } catch (err) { return send(res, 400, { error: err.message }); }
+      }
+
+      // ---- phone access through the built-in bridge (p2p.js) - changed only from this computer (see COMPUTER_ONLY) ----
+      if (url.pathname.startsWith('/api/p2p')) {
+        try {
+          if (req.method === 'GET' && url.pathname === '/api/p2p') return send(res, 200, { ...(await p2p.status()), local: isLocalRequest(req, host) });
+          if (req.method === 'POST' && url.pathname === '/api/p2p/enable') {
+            appSettings.updateEnv({ P2P_ENABLED: '1' }); process.env.P2P_ENABLED = '1';
+            p2p.start();
+            return send(res, 200, { ok: true });
+          }
+          if (req.method === 'POST' && url.pathname === '/api/p2p/disable') {
+            appSettings.updateEnv({ P2P_ENABLED: '0' }); process.env.P2P_ENABLED = '0';
+            await p2p.stop();
+            return send(res, 200, { ok: true });
+          }
+          if (req.method === 'POST' && url.pathname === '/api/p2p/pair') return send(res, 200, await p2p.pair());
+          if (req.method === 'POST' && url.pathname === '/api/p2p/pair/stop') { await p2p.stopPairing(); return send(res, 200, { ok: true }); }
+          if (req.method === 'POST' && url.pathname === '/api/p2p/revoke') return send(res, 200, await p2p.revoke((await readJson(req)).nodeId));
         } catch (err) { return send(res, 400, { error: err.message }); }
       }
 

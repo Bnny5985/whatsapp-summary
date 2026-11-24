@@ -1,0 +1,36 @@
+# Builds the phone bridge (p2p-bridge.exe) on Windows and runs its tests.
+# The .exe is attached to the run as an artifact: download it, then build the installer with
+#   set P2P_BRIDGE_EXE=<path to p2p-bridge.exe> && npm run dist   (in app/)
+name: p2p-bridge
+
+on:
+  push:
+    paths: ['p2p-bridge/**', '.github/workflows/p2p-bridge.yml']
+  pull_request:
+    paths: ['p2p-bridge/**', '.github/workflows/p2p-bridge.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: p2p-bridge
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rust toolchain
+        run: rustup toolchain install stable --profile minimal && rustup default stable
+      - name: Test
+        run: cargo test --locked
+      - name: Build
+        run: cargo build --release --locked
+      - name: Smoke test
+        run: ./target/release/p2p-bridge.exe --version
+      - uses: actions/upload-artifact@v4
+        with:
+          name: p2p-bridge-windows-x64
+          path: p2p-bridge/target/release/p2p-bridge.exe
+          if-no-files-found: error

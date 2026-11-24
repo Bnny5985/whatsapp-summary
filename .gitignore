@@ -42,3 +42,6 @@ voice/
 .autostart-default
 graphify-out/
 build-log.txt
+
+# Rust build output (phone bridge)
+p2p-bridge/target/

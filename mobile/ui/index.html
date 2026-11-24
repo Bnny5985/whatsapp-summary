@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>סיכומי וואטסאפ</title>
+<style>
+  :root { --bg: #0f1115; --card: #181b21; --text: #e8eaed; --muted: #9aa3ad; --accent: #22c55e; --bad: #f87171; --line: #2a2f37; }
+  @media (prefers-color-scheme: light) { :root { --bg: #f4f6f8; --card: #fff; --text: #14171a; --muted: #5f6b76; --line: #e3e7eb; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding: calc(env(safe-area-inset-top) + 24px) 20px calc(env(safe-area-inset-bottom) + 24px); }
+  main { max-width: 440px; margin: 0 auto; }
+  .logo { font-size: 56px; text-align: center; margin-top: 4vh; }
+  h1 { text-align: center; font-size: 24px; margin: 8px 0 4px; }
+  .sub { text-align: center; color: var(--muted); margin: 0 0 28px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 20px; }
+  ol { margin: 0; padding-inline-start: 22px; color: var(--muted); }
+  ol b { color: var(--text); }
+  .btn { display: block; width: 100%; border: 0; border-radius: 14px; padding: 16px; font: inherit; font-size: 18px; font-weight: 600;
+    background: var(--accent); color: #04210f; margin-top: 20px; cursor: pointer; }
+  .btn:disabled { opacity: .6; }
+  .msg { min-height: 24px; margin-top: 14px; text-align: center; }
+  .msg.bad { color: var(--bad); }
+  details { margin-top: 18px; color: var(--muted); }
+  summary { cursor: pointer; }
+  textarea { width: 100%; min-height: 90px; margin-top: 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--text);
+    padding: 10px; font: 13px ui-monospace, monospace; direction: ltr; }
+  .ghost { background: transparent; color: var(--text); border: 1px solid var(--line); font-size: 16px; padding: 12px; margin-top: 10px; }
+  .lock { text-align: center; color: var(--muted); font-size: 14px; margin-top: 22px; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<main>
+  <div class="logo">💬</div>
+  <h1>סיכומי וואטסאפ</h1>
+  <p class="sub">התוכנה מהמחשב שלך, בטלפון</p>
+  <div class="card" id="pairCard">
+    <ol>
+      <li>במחשב, פותחים את התוכנה ← <b>הגדרות</b> ← <b>גישה מהטלפון</b>.</li>
+      <li>לוחצים <b>צמד טלפון חדש</b>. יופיע קוד.</li>
+      <li>כאן לוחצים על הכפתור ומכוונים את המצלמה לקוד.</li>
+    </ol>
+    <button class="btn" id="scan" type="button">📷 סרוק קוד QR מהמחשב</button>
+    <div class="msg" id="msg" role="status"></div>
+    <details id="manual">
+      <summary>אין מצלמה? הדבק את הקוד</summary>
+      <textarea id="code" placeholder='{"v":1,"nodeId":"…","token":"…"}'></textarea>
+      <button class="btn ghost" id="paste" type="button">התחבר עם הקוד</button>
+    </details>
+  </div>
+  <p class="lock">🔒 החיבור ישיר ומוצפן מקצה לקצה בין הטלפון למחשב שלך.</p>
+</main>
+<script>
+  const { invoke } = window.__TAURI__.core;
+  const $ = (s) => document.querySelector(s);
+  const say = (text, bad) => { $('#msg').textContent = text; $('#msg').className = `msg${bad ? ' bad' : ''}`; };
+  const deviceName = () => {
+    const ua = navigator.userAgent;
+    if (/iPhone/.test(ua)) return 'iPhone';
+    if (/iPad/.test(ua)) return 'iPad';
+    const m = /Android[^;]*;\s*([^;)]+?)(?:\s+Build|\))/.exec(ua);
+    return m ? m[1].trim() : (/Android/.test(ua) ? 'Android' : 'טלפון');
+  };
+
+  async function connect(payload) {
+    $('#scan').disabled = true;
+    say('מתחבר למחשב…');
+    try {
+      const url = await invoke('pair', { payload, name: deviceName() });
+      say('✓ מחובר! פותח את התוכנה…');
+      location.replace(url);
+    } catch (err) {
+      say(String(err), true);
+      $('#scan').disabled = false;
+    }
+  }
+
+  async function scan() {
+    const core = window.__TAURI__.core;
+    try {
+      let perm = await core.checkPermissions('barcode-scanner').then((p) => p.camera).catch(() => 'prompt');
+      if (perm !== 'granted') perm = await core.requestPermissions('barcode-scanner').then((p) => p.camera);
+      if (perm !== 'granted') {
+        say('צריך לאשר גישה למצלמה כדי לסרוק את הקוד. אפשר לאשר בהגדרות הטלפון.', true);
+        return;
+      }
+      const r = await invoke('plugin:barcode-scanner|scan', { windowed: false, formats: ['QR_CODE'] });
+      if (r && r.content) await connect(r.content);
+    } catch (err) {
+      say(`הסריקה נכשלה: ${err}`, true);
+    }
+  }
+
+  (async () => {
+    const s = await invoke('status');
+    if (s.paired && s.url) { location.replace(s.url); return; }
+    if (!s.mobile) { $('#scan').classList.add('hidden'); $('#manual').open = true; }
+    $('#scan').onclick = scan;
+    $('#paste').onclick = () => connect($('#code').value);
+  })().catch((err) => say(String(err), true));
+</script>
+</body>
+</html>

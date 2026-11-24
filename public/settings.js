@@ -502,12 +502,12 @@
     $('#tgOff', el)?.addEventListener('click', async () => { if (!confirm('לנתק את בוט הטלגרם?')) return; restarting(await post('/api/settings/telegram', { token: '' }), $('#tgMsg', el)); });
   };
 
-  /* ---------- phone access (Tailscale) ---------- */
-  RENDER.phone = async (el) => {
+  /* ---------- phone access, other way: Tailscale ---------- */
+  const renderTailscale = async (el) => {
     const s = await api('/api/remote');
     const step = (n, done, title, body) => `<div class="st-sec ${done ? '' : 'st-rec'}"><h4>${done ? '✅' : `${n}.`} ${title}</h4>${body}</div>`;
     const onPc = s.local;
-    el.innerHTML = head('גישה מהטלפון', 'כך פותחים את התוכנה מהטלפון, גם מחוץ לבית. משתמשים ב-Tailscale: אפליקציה חינמית שמחברת בצורה פרטית ומוצפנת בין המחשב לטלפון שלך. רק המכשירים שלך, עם החשבון שלך, יכולים להיכנס.') + `
+    el.innerHTML = '<p class="meta">Tailscale היא אפליקציה חינמית שמחברת בצורה פרטית ומוצפנת בין המחשב לטלפון, ופותחים את התוכנה בדפדפן של הטלפון. מתאים למי שכבר משתמש בה.</p>' + `
       ${step(1, s.installed, 'מתקינים את Tailscale במחשב', s.installed ? '<p class="meta" style="margin:0">מותקן.</p>'
         : `<p class="meta">לוחצים על הכפתור, מורידים את הגרסה ל-Windows ומתקינים כמו כל תוכנה. בסוף ההתקנה נפתח חלון התחברות: מתחברים עם חשבון Google (או Microsoft / Apple). זה בחינם.</p>
            <a class="btn btn-primary" href="${esc(s.download)}" target="_blank" rel="noopener">⬇ הורדת Tailscale</a>`)}
@@ -543,6 +543,87 @@
           $('#rmEnable', el).innerHTML = `<p class="meta" style="margin-top:10px">פעם ראשונה בלבד: Tailscale מבקש לאשר את האפשרות הזו. לוחצים על הכפתור, מאשרים בדף שנפתח (<b>Enable</b>), וחוזרים לכאן ללחוץ שוב "הפעל".</p>
             <a class="btn btn-sm" href="${esc(r.enable_url)}" target="_blank" rel="noopener">פתח את דף האישור</a>`;
           b.disabled = false; msg(m, '');
+        }
+      } catch (err) { b.disabled = false; msg(m, err.message, 'bad'); }
+    };
+  };
+
+  /* ---------- phone access: the phone app (built-in p2p bridge) ---------- */
+  let pairPoll = null;
+  let phoneFlash = ''; // shown once on the next render (show() replaces the whole tab)
+  RENDER.phone = async (el) => {
+    clearInterval(pairPoll); pairPoll = null;
+    const s = await api('/api/p2p');
+    const onPc = s.local;
+    const ago = (t) => { if (!t) return ''; const m = Math.round((Date.now() / 1000 - t) / 60); return m < 2 ? 'עכשיו' : m < 60 ? `לפני ${m} דקות` : m < 1440 ? `לפני ${Math.round(m / 60)} שעות` : `לפני ${Math.round(m / 1440)} ימים`; };
+    const devices = (s.devices || []).map((d) => `<div class="st-item"><span style="font-size:22px">📱</span>
+        <div class="grow"><div class="t">${esc(d.name || 'טלפון')}</div><div class="s"><span dir="ltr">${esc(d.nodeId.slice(0, 10))}…</span> · ${d.connected ? 'מחובר עכשיו' : `נראה ${esc(ago(d.lastSeen))}`}</div></div>
+        ${d.connected ? '<span class="st-badge ok">מחובר</span>' : ''}
+        ${onPc ? `<button class="btn btn-ghost btn-sm" type="button" data-revoke="${esc(d.nodeId)}" data-name="${esc(d.name || 'הטלפון')}">בטל</button>` : ''}</div>`).join('');
+    let app;
+    if (!s.available) app = '<p class="meta warn" style="margin:0">רכיב החיבור לטלפון חסר בהתקנה הזו. התקן מחדש את הגרסה האחרונה.</p>';
+    else if (!s.enabled) app = onPc ? '<p class="meta">מפעילים פעם אחת, ואז מצמדים את הטלפון בסריקת קוד.</p><button class="btn btn-primary" type="button" id="p2On">📱 הפעל גישה מהאפליקציה</button>' : '<p class="meta" style="margin:0">כבוי. את זה מפעילים מהמחשב עצמו.</p>';
+    else app = `
+        <p class="meta" style="margin-top:0">${s.running ? (s.online ? '🟢 פועל ומוכן לחיבור מכל מקום.' : '🟡 פועל, מחפש חיבור לאינטרנט…') : `🔴 לא פועל${s.error ? ` (${esc(s.error)})` : ''}.`}</p>
+        <h4 style="margin:14px 0 6px">טלפונים מחוברים</h4>
+        ${devices || '<p class="meta" style="margin:0">עוד אין. לוחצים "צמד טלפון חדש" וסורקים את הקוד באפליקציה.</p>'}
+        ${onPc ? `<div class="st-row" style="margin-top:12px"><button class="btn btn-primary" type="button" id="p2Pair">➕ צמד טלפון חדש</button>
+          <button class="btn btn-ghost btn-sm" type="button" id="p2Off">כבה גישה מהאפליקציה</button></div>
+          <div id="p2Qr"></div>` : ''}`;
+    el.innerHTML = head('גישה מהטלפון', 'פותחים את התוכנה מהטלפון, גם מחוץ לבית. החיבור ישיר ומוצפן מקצה לקצה בין המחשב לטלפון שלך, בלי חשבון ובלי להתקין שום דבר במחשב. רק טלפון שצימדת בסריקת קוד יכול להיכנס.') + `
+      <div class="st-sec">
+        <h4>אפליקציית הטלפון (מומלץ)</h4>
+        ${app}
+        <ol class="meta" style="margin:12px 0 0;padding-inline-start:22px;line-height:2">
+          <li>מתקינים בטלפון את האפליקציה <b>סיכומי וואטסאפ</b>.</li>
+          <li>כאן במחשב לוחצים <b>צמד טלפון חדש</b>.</li>
+          <li>באפליקציה לוחצים <b>סרוק קוד QR מהמחשב</b> ומכוונים את המצלמה לקוד.</li>
+        </ol>
+        <p class="meta" style="margin:8px 0 0">המחשב צריך להיות דלוק והתוכנה פועלת (היא עולה לבד עם Windows).</p>
+      </div>
+      <details class="st-sec" id="tsBox"><summary style="cursor:pointer"><b>דרך נוספת: Tailscale</b></summary><div id="tsInner" style="margin-top:10px"></div></details>
+      <div class="st-row"><button class="btn btn-ghost btn-sm" type="button" id="p2Re">בדוק שוב</button><span class="st-msg" id="p2Msg"></span></div>`;
+    if (phoneFlash) { msg($('#p2Msg', el), phoneFlash, 'ok'); phoneFlash = ''; }
+    $('#tsBox', el).addEventListener('toggle', (e) => { if (e.target.open && !$('#tsInner', el).childElementCount) renderTailscale($('#tsInner', el)).catch((err) => msg($('#p2Msg', el), err.message, 'bad')); }, { once: false });
+
+    const qrBox = $('#p2Qr', el);
+    const showQr = (r) => {
+      const known = new Set((s.devices || []).map((d) => d.nodeId));
+      let left = r.expiresIn;
+      qrBox.innerHTML = `<div class="st-sec" style="text-align:center;margin-top:12px">
+          <p class="meta" style="margin-top:0">באפליקציה בטלפון: <b>סרוק קוד QR מהמחשב</b></p>
+          <div style="width:240px;max-width:100%;margin:0 auto;background:#fff;padding:8px;border-radius:12px">${r.svg}</div>
+          <p class="meta" id="p2Left"></p>
+          <button class="btn btn-ghost btn-sm" type="button" id="p2Cancel">ביטול</button></div>`;
+      const tick = () => { const l = $('#p2Left', el); if (l) l.textContent = left > 0 ? `הקוד בתוקף עוד ${left} שניות, ולשימוש אחד בלבד.` : 'הקוד פג. לוחצים שוב "צמד טלפון חדש".'; };
+      tick();
+      let n = 0;
+      pairPoll = setInterval(async () => {
+        if (!el.isConnected) { clearInterval(pairPoll); pairPoll = null; return; }
+        left -= 1; tick();
+        if (left <= 0) { clearInterval(pairPoll); pairPoll = null; $('#p2Qr svg', el)?.setAttribute('opacity', '0.15'); return; }
+        if (++n % 2) return; // check every 2 seconds
+        try {
+          const now = await api('/api/p2p');
+          const added = (now.devices || []).find((d) => !known.has(d.nodeId));
+          if (added) { clearInterval(pairPoll); pairPoll = null; phoneFlash = `✓ ${added.name || 'הטלפון'} צומד בהצלחה`; show('phone'); }
+        } catch { /* keep waiting */ }
+      }, 1000);
+    };
+
+    el.onclick = async (e) => {
+      const b = e.target.closest('button'); if (!b || b.closest('#tsInner')) return;
+      const m = $('#p2Msg', el);
+      try {
+        if (b.id === 'p2Re') return show('phone');
+        if (b.id === 'p2On') { b.disabled = true; await post('/api/p2p/enable'); return show('phone'); }
+        if (b.id === 'p2Off') { if (!confirm('לכבות את הגישה מהאפליקציה? הטלפונים יישארו מצומדים ויתחברו שוב כשתפעיל.')) return; await post('/api/p2p/disable'); return show('phone'); }
+        if (b.id === 'p2Pair') { b.disabled = true; msg(m, 'מכין קוד…'); clearInterval(pairPoll); showQr(await post('/api/p2p/pair')); msg(m, ''); b.disabled = false; return; }
+        if (b.id === 'p2Cancel') { clearInterval(pairPoll); pairPoll = null; qrBox.innerHTML = ''; await post('/api/p2p/pair/stop'); return; }
+        if (b.dataset.revoke) {
+          if (!confirm(`לבטל את הגישה של "${b.dataset.name}"? כדי לחבר אותו שוב צריך לסרוק קוד חדש.`)) return;
+          await post('/api/p2p/revoke', { nodeId: b.dataset.revoke });
+          return show('phone');
         }
       } catch (err) { b.disabled = false; msg(m, err.message, 'bad'); }
     };

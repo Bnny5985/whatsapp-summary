@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Plain http only to the app's own local proxy on the phone (everything to the computer goes over Iroh, encrypted). -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">localhost</domain>
+        <!-- Tauri serves the bundled pairing screen from http://tauri.localhost on Android. -->
+        <domain includeSubdomains="false">tauri.localhost</domain>
+    </domain-config>
+</network-security-config>

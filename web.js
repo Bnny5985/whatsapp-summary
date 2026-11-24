@@ -294,10 +294,11 @@ function startWebServer({ waLink = () => null, db, events, calendar, summarizeCh
         try { return send(res, 200, await backupNow()); } catch (err) { return send(res, 500, { error: err.message }); }
       }
       if (url.pathname === '/api/system/restart' && req.method === 'POST') { send(res, 200, { ok: true, restarting: SUPERVISED }); return restartSoon(); }
-      // Open the data folder in Explorer - only when the dashboard is opened on this computer itself.
+      // Open the data folder in Explorer / Finder - only when the dashboard is opened on this computer itself.
       if (url.pathname === '/api/system/open-folder' && req.method === 'POST') {
-        if (!['localhost', '127.0.0.1'].includes(host) || process.platform !== 'win32') return send(res, 403, { error: 'זמין רק במחשב עצמו' });
-        require('child_process').spawn('explorer.exe', [require('./paths').DATA_DIR], { detached: true, stdio: 'ignore' }).unref();
+        const opener = { win32: 'explorer.exe', darwin: 'open' }[process.platform];
+        if (!['localhost', '127.0.0.1'].includes(host) || !opener) return send(res, 403, { error: 'זמין רק במחשב עצמו' });
+        require('child_process').spawn(opener, [require('./paths').DATA_DIR], { detached: true, stdio: 'ignore' }).unref();
         return send(res, 200, { ok: true });
       }
       if (url.pathname === '/api/data/clear-archive' && req.method === 'POST') {
@@ -329,7 +330,7 @@ function startWebServer({ waLink = () => null, db, events, calendar, summarizeCh
         }
       }
       // GET /api/version - lets the dashboard notice when the running bot is older than the files on disk
-      if (req.method === 'GET' && url.pathname === '/api/version') return send(res, 200, { version: SERVER_VERSION });
+      if (req.method === 'GET' && url.pathname === '/api/version') return send(res, 200, { version: SERVER_VERSION, platform: process.platform });
       // GET /api/models - which model does what (and how much the small one filtered)
       if (req.method === 'GET' && url.pathname === '/api/models') {
         return send(res, 200, { ...models, fast: router?.model || null, fast_active: Boolean(router?.active), stats: router?.stats || null, cloud: llm ? llm.status() : [] });

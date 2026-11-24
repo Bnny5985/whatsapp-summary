@@ -8,6 +8,11 @@ const { execFile } = require('child_process');
 const DOWNLOAD_URL = 'https://tailscale.com/download';
 
 function findTailscale() {
+  if (process.platform === 'darwin') {
+    // An app started from the Dock gets a short PATH (no Homebrew), so look in the usual places first.
+    const mac = ['/Applications/Tailscale.app/Contents/MacOS/Tailscale', '/opt/homebrew/bin/tailscale', '/usr/local/bin/tailscale'];
+    return mac.find((p) => fs.existsSync(p)) || null;
+  }
   if (process.platform !== 'win32') return 'tailscale';
   const dirs = [process.env.ProgramFiles, process.env['ProgramFiles(x86)'], process.env.LOCALAPPDATA && path.join(process.env.LOCALAPPDATA, 'Programs')].filter(Boolean);
   for (const d of dirs) {

@@ -8,7 +8,8 @@
     "start": "electron .",
     "test": "node --test test/supervisor.test.js",
     "build:engine": "node ../scripts/build-engine.js",
-    "dist": "npm run build:engine && electron-builder --win nsis --x64 --publish never"
+    "dist": "npm run build:engine && electron-builder --win nsis --x64 --publish never",
+    "dist:mac": "npm run build:engine && electron-builder --mac dmg --publish never"
   },
   "devDependencies": {
     "electron": "45.3.3",
@@ -58,6 +59,26 @@
       "runAfterFinish": true,
       "artifactName": "WhatsApp-Summary-Setup-${version}.${ext}"
     },
-    "npmRebuild": false
+    "npmRebuild": false,
+    "mac": {
+      "target": [
+        {
+          "target": "dmg"
+        }
+      ],
+      "category": "public.app-category.productivity",
+      "icon": "../public/app.icns",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "extendInfo": {
+        "NSHumanReadableCopyright": "WhatsApp Summary"
+      },
+      "artifactName": "WhatsApp-Summary-${version}-mac-${arch}.${ext}"
+    },
+    "dmg": {
+      "title": "WhatsApp Summary ${version}",
+      "writeUpdateInfo": false
+    }
   }
 }

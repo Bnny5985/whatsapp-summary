@@ -1,4 +1,6 @@
-# Builds the Windows installer (engine + phone bridge + Electron shell) and publishes it as a GitHub release.
+# Builds the Windows installer and the macOS disk images (engine + phone bridge + Electron shell) and publishes them
+# together as one GitHub release. The macOS builds are not signed by an Apple Developer ID (ad-hoc signature only),
+# so on first launch macOS asks the user to confirm (right-click > Open), see README.
 # Triggered by pushing a version tag that matches app/package.json, e.g.:
 #   git tag v0.3.0-beta.1 && git push origin v0.3.0-beta.1
 # A tag with a "-" (beta, rc) becomes a pre-release, so "latest" keeps pointing at the last stable version.
@@ -8,7 +10,7 @@ name: release
 on:
   push:
     tags: ['v*']
-  workflow_dispatch: # build only (the installer is attached to the run as an artifact, nothing is published)
+  workflow_dispatch: # build only (the installers are attached to the run as artifacts, nothing is published)
 
 permissions:
   contents: write
@@ -62,18 +64,85 @@ jobs:
             dist/WhatsApp-Summary-Setup-*.exe.sha256
           if-no-files-found: error
 
+  mac-dmg:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            runner: macos-latest     # Apple Silicon
+          - arch: x64
+            runner: macos-15-intel   # Intel Macs: built natively so sqlite3 and the bridge match
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Rust toolchain
+        run: rustup toolchain install stable --profile minimal && rustup default stable
+
+      - name: Version check
+        run: |
+          VERSION=$(node -p "require('./app/package.json').version")
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          if [ "${GITHUB_REF_TYPE}" = "tag" ] && [ "${GITHUB_REF_NAME}" != "v$VERSION" ]; then
+            echo "::error::tag ${GITHUB_REF_NAME} does not match app/package.json version $VERSION"; exit 1
+          fi
+
+      - name: Engine tests
+        run: npm ci --no-audit --no-fund && npm test
+
+      - name: Phone bridge (tests + build)
+        run: npm run test:p2p && npm run build:p2p
+
+      - name: Disk image
+        working-directory: app
+        run: npm ci --no-audit --no-fund && npm test && npm run dist:mac -- --${{ matrix.arch }}
+
+      - name: Checksum
+        run: |
+          cd dist
+          DMG="WhatsApp-Summary-${VERSION}-mac-${{ matrix.arch }}.dmg"
+          test -f "$DMG"
+          shasum -a 256 "$DMG" > "$DMG.sha256"
+          cat "$DMG.sha256"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WhatsApp-Summary-${{ env.VERSION }}-mac-${{ matrix.arch }}
+          path: |
+            dist/WhatsApp-Summary-*-mac-*.dmg
+            dist/WhatsApp-Summary-*-mac-*.dmg.sha256
+          if-no-files-found: error
+
+  publish:
+    if: github.ref_type == 'tag'
+    needs: [windows-installer, mac-dmg]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
       - name: Publish release
-        if: github.ref_type == 'tag'
-        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          VERSION=$(node -p "require('./app/package.json').version")
           TAG="${GITHUB_REF_NAME}"
           NOTES="docs/release-notes/${TAG}.md"
           ARGS=(--title "WhatsApp Summary ${VERSION}")
           if [ -f "$NOTES" ]; then ARGS+=(--notes-file "$NOTES"); else ARGS+=(--generate-notes); fi
           case "$VERSION" in *-*) ARGS+=(--prerelease --latest=false) ;; esac
-          FILES=(dist/WhatsApp-Summary-Setup-${VERSION}.exe dist/WhatsApp-Summary-Setup-${VERSION}.exe.sha256)
+          shopt -s nullglob
+          FILES=(dist/WhatsApp-Summary-Setup-${VERSION}.exe* dist/WhatsApp-Summary-${VERSION}-mac-*.dmg*)
+          ls -la "${FILES[@]}"
           # Re-running for the same tag (e.g. the tag was moved) replaces the files instead of failing.
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "${FILES[@]}" --clobber

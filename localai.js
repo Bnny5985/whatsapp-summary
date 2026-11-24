@@ -1,8 +1,8 @@
 // Built-in local AI ("no LM Studio needed").
 //
 // - Runtime: llama.cpp's llama-server (open source, ggml-org/llama.cpp). Downloaded once from its official GitHub
-//   releases (Vulkan build for computers with a graphics card, CPU build otherwise) and checked against the SHA-256
-//   that GitHub publishes for each file.
+//   releases (Windows: Vulkan build for computers with a graphics card, CPU build otherwise; macOS: the one macOS build,
+//   which uses Metal on Apple Silicon) and checked against the SHA-256 that GitHub publishes for each file.
 // - Models: GGUF files from Hugging Face. The list is fetched live from the publishers below, newest first, so new
 //   models show up without updating the app. Each file is checked against the SHA-256 Hugging Face publishes.
 // - Two roles: the MAIN model (summaries, answers) and a small AGENT model (sorting: "does this message hold a task?",
@@ -146,8 +146,19 @@ function pickFiles(tree) {
 }
 
 /** Pick the llama.cpp Windows build from a GitHub releases listing. Pure (tested). */
-function pickRuntime(releases, variant) {
-  const re = new RegExp(`^llama-(b\\d+)-bin-win-${variant}-x64\\.zip$`, 'i');
+/**
+ * The llama.cpp release file for this computer. Windows: "win-<variant>-x64.zip" (variant = vulkan | cpu).
+ * macOS: "macos-<arch>.tar.gz" - one build for both variants (Metal on Apple Silicon; "cpu" only turns the GPU off).
+ */
+function runtimeAssetRe(variant, { platform = process.platform, arch = process.arch } = {}) {
+  if (platform === 'darwin') return ['vulkan', 'cpu'].includes(variant) && ['arm64', 'x64'].includes(arch) ? new RegExp(`^llama-(b\\d+)-bin-macos-${arch}\\.tar\\.gz$`, 'i') : null;
+  if (platform === 'win32') return new RegExp(`^llama-(b\\d+)-bin-win-${variant}-x64\\.zip$`, 'i');
+  return null;
+}
+
+function pickRuntime(releases, variant, target = {}) {
+  const re = runtimeAssetRe(variant, target);
+  if (!re) return null;
   for (const r of releases || []) {
     const a = (r.assets || []).find((x) => re.test(x.name));
     if (a) return { tag: r.tag_name, name: a.name, url: a.browser_download_url, size: a.size, sha256: String(a.digest || '').replace(/^sha256:/, '') || null };
@@ -155,7 +166,7 @@ function pickRuntime(releases, variant) {
   return null;
 }
 
-function createLocalAI({ dir, log = () => {}, logError = () => {}, fetchImpl = globalThis.fetch, platform = process.platform } = {}) {
+function createLocalAI({ dir, log = () => {}, logError = () => {}, fetchImpl = globalThis.fetch, platform = process.platform, arch = process.arch } = {}) {
   const modelsDir = path.join(dir, 'models');
   const runtimeDir = path.join(dir, 'llama');
   const jobs = new Map();      // id -> download job
@@ -181,9 +192,14 @@ function createLocalAI({ dir, log = () => {}, logError = () => {}, fetchImpl = g
         gpus = list.filter((g) => g?.name && !/basic|remote|virtual|parsec|displaylink/i.test(g.name))
           .map((g) => ({ name: g.name, vram_gb: Math.round((Number(g.vram) || 0) / 2 ** 30) }));
       } catch { /* no GPU info */ }
+    } else if (platform === 'darwin' && arch === 'arm64') {
+      // Apple Silicon: the graphics part shares the computer's memory; Metal lets a program use about 2/3 of it
+      // (3/4 on machines with more than 36GB).
+      const chip = (os.cpus()[0]?.model || 'Apple Silicon').trim();
+      gpus = [{ name: chip, vram_gb: Math.floor(ram_gb * (ram_gb > 36 ? 0.75 : 0.67)), unified: true }];
     }
     const best = gpus.reduce((m, g) => Math.max(m, g.vram_gb || 0), 0);
-    hwCache = { ram_gb, cpu_cores: os.cpus().length, gpus, vram_gb: best, suggested_gpu: best >= 2 ? 'vulkan' : 'cpu' };
+    hwCache = { ram_gb, cpu_cores: os.cpus().length, gpus, vram_gb: best, suggested_gpu: best >= 2 ? 'vulkan' : 'cpu', platform, accel: platform === 'darwin' ? 'Metal' : 'Vulkan' };
     return hwCache;
   }
 
@@ -400,6 +416,9 @@ function createLocalAI({ dir, log = () => {}, logError = () => {}, fetchImpl = g
       const out = await new Promise((resolve) => execFile('tasklist', ['/FI', `PID eq ${s.proc.pid}`, '/FO', 'CSV', '/NH'], { windowsHide: true, timeout: 10000 }, (e, so) => resolve(e ? '' : String(so))));
       const m = /"([\d.,\s]+)\s*K"/.exec(out);
       if (m) memory_mb = Math.round(Number(m[1].replace(/[^\d]/g, '')) / 1024);
+    } else if (s.proc?.pid) {
+      const out = await new Promise((resolve) => execFile('ps', ['-o', 'rss=', '-p', String(s.proc.pid)], { timeout: 10000 }, (e, so) => resolve(e ? '' : String(so))));
+      if (Number(out.trim())) memory_mb = Math.round(Number(out.trim()) / 1024);
     }
     const passed = results.filter((r) => r.ok).length;
     const verdict = role === 'agent'
@@ -461,27 +480,34 @@ function createLocalAI({ dir, log = () => {}, logError = () => {}, fetchImpl = g
 
   async function installRuntime(variant) {
     if (!['vulkan', 'cpu'].includes(variant)) throw new Error('bad variant');
-    if (platform !== 'win32') throw new Error('ההורדה האוטומטית של המנוע זמינה כרגע ב-Windows בלבד');
+    if (!runtimeAssetRe(variant, { platform, arch })) throw new Error('ההורדה האוטומטית של המנוע זמינה ב-Windows וב-macOS בלבד');
     const running = [...jobs.values()].find((j) => j.kind === 'runtime' && j.file === variant && ['downloading', 'verifying'].includes(j.state));
     if (running) return publicJob(running);
     const releases = await (await get('https://api.github.com/repos/ggml-org/llama.cpp/releases?per_page=15')).json();
-    const rel = pickRuntime(releases, variant);
-    if (!rel) throw new Error('לא נמצאה גרסת llama.cpp ל-Windows');
+    const rel = pickRuntime(releases, variant, { platform, arch });
+    if (!rel) throw new Error(`לא נמצאה גרסת llama.cpp ל-${platform === 'darwin' ? 'macOS' : 'Windows'}`);
     const job = newJob('runtime', `llama.cpp ${rel.tag} (${variant === 'vulkan' ? 'כרטיס מסך' : 'מעבד'})`, rel.size);
     job.file = variant;
     (async () => {
       try {
-        const zip = path.join(runtimeDir, `${variant}.zip`);
+        const zip = path.join(runtimeDir, `${variant}${platform === 'darwin' ? '.tar.gz' : '.zip'}`);
         await downloadFile(job, rel.url, zip, rel.sha256, rel.size);
         job.state = 'installing';
         const target = path.join(runtimeDir, variant);
         if (servers.main?.variant === variant || servers.agent?.variant === variant) { await stopServer('main'); await stopServer('agent'); }
         fs.rmSync(target, { recursive: true, force: true });
         fs.mkdirSync(target, { recursive: true });
-        // Windows 10+ ships bsdtar, which reads zip files.
+        // Windows 10+ and macOS both ship bsdtar, which reads zip and tar.gz files.
         await new Promise((resolve, reject) => execFile('tar', ['-xf', zip, '-C', target], { windowsHide: true, timeout: 5 * 60e3 }, (e) => (e ? reject(e) : resolve())));
         fs.rmSync(zip, { force: true });
-        if (!runtimeExe(variant)) throw new Error('llama-server.exe לא נמצא בקובץ שהורד');
+        const exe = runtimeExe(variant);
+        if (!exe) throw new Error('llama-server לא נמצא בקובץ שהורד');
+        if (platform === 'darwin') {
+          fs.chmodSync(exe, 0o755);
+          // Nothing here marks the files as "downloaded from the internet", but if something did, macOS would refuse
+          // to run the unsigned dylibs: clear the mark (the checksum above already proved the files are GitHub's).
+          await new Promise((resolve) => execFile('xattr', ['-dr', 'com.apple.quarantine', target], { timeout: 60e3 }, () => resolve()));
+        }
         writeState(dir, { [`runtime_${variant}`]: rel.tag });
         job.state = 'done';
         job.done = job.total;
@@ -520,6 +546,8 @@ function createLocalAI({ dir, log = () => {}, logError = () => {}, fetchImpl = g
     let name = '';
     if (platform === 'win32') {
       name = await new Promise((resolve) => execFile('tasklist', ['/FI', `PID eq ${pid}`, '/FO', 'CSV', '/NH'], { windowsHide: true, timeout: 10000 }, (e, so) => resolve(e ? '' : String(so))));
+    } else {
+      name = await new Promise((resolve) => execFile('ps', ['-o', 'comm=', '-p', String(pid)], { timeout: 10000 }, (e, so) => resolve(e ? '' : String(so))));
     }
     if (!/llama-server/i.test(name)) return;
     try { process.kill(pid); await new Promise((r) => setTimeout(r, 1000)); } catch { /* not running */ }
@@ -538,11 +566,13 @@ function createLocalAI({ dir, log = () => {}, logError = () => {}, fetchImpl = g
     await killStale(role);
     const help = await serverHelp(exe);
     const args = ['-m', path.join(modelsDir, file), '--host', '127.0.0.1', '--port', String(PORTS[role]), '-c', String(role === 'agent' ? Math.min(context, 8192) : context), '--alias', role, '--jinja'];
-    if (!/--fit\b/.test(help)) args.push('-ngl', '999');                 // older builds: put every layer on the graphics card
+    const cpuOnly = exe.includes(`${path.sep}cpu${path.sep}`);
+    if (platform === 'darwin' && cpuOnly) args.push('-ngl', '0');        // macOS has one build: "cpu" = keep the GPU off
+    else if (!/--fit\b/.test(help)) args.push('-ngl', '999');          // older builds: put every layer on the graphics card
     if (/--reasoning-budget\b/.test(help)) args.push('--reasoning-budget', '0'); // no hidden "thinking": answers come straight away
     if (role === 'main' && model.mmproj && fs.existsSync(path.join(modelsDir, model.mmproj))) args.push('--mmproj', path.join(modelsDir, model.mmproj));
     const proc = spawn(exe, args, { cwd: path.dirname(exe), windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
-    const s = { proc, port: PORTS[role], model: file, repo: model.repo, variant: exe.includes(`${path.sep}cpu${path.sep}`) ? 'cpu' : 'vulkan', state: 'loading', error: null, startedAt: Date.now(), tail: [] };
+    const s = { proc, port: PORTS[role], model: file, repo: model.repo, variant: cpuOnly ? 'cpu' : 'vulkan', state: 'loading', error: null, startedAt: Date.now(), tail: [] };
     servers[role] = s;
     writeState(dir, { [`pid_${role}`]: proc.pid });
     const keep = (d) => { for (const line of String(d).split(/\r?\n/)) if (line.trim()) { s.tail.push(line.slice(0, 300)); if (s.tail.length > 30) s.tail.shift(); } };
@@ -621,4 +651,4 @@ function rankModels(models, hw, { now = Date.now() } = {}) {
   };
 }
 
-module.exports = { officialName, createLocalAI, applyEnv, buildCatalog, pickFiles, pickRuntime, rankModels, fitOf, paramsB, readState, writeState, PORTS, PUBLISHERS };
+module.exports = { officialName, createLocalAI, applyEnv, buildCatalog, pickFiles, pickRuntime, runtimeAssetRe, rankModels, fitOf, paramsB, readState, writeState, PORTS, PUBLISHERS };

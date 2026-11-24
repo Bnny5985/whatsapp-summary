@@ -75,8 +75,23 @@ test('runtime pick: the newest release that has the Windows build asked for, wit
       { name: 'llama-b12463-bin-win-vulkan-x64.zip', browser_download_url: 'u2', size: 2, digest: 'sha256:bb' },
       { name: 'llama-b12463-bin-win-vulkan-arm64.zip', browser_download_url: 'u3', size: 3 }] },
   ];
-  assert.deepStrictEqual(ai.pickRuntime(rels, 'vulkan'), { tag: 'b12463', name: 'llama-b12463-bin-win-vulkan-x64.zip', url: 'u2', size: 2, sha256: 'bb' });
-  assert.strictEqual(ai.pickRuntime(rels, 'cuda'), null);
+  assert.deepStrictEqual(ai.pickRuntime(rels, 'vulkan', { platform: 'win32' }), { tag: 'b12463', name: 'llama-b12463-bin-win-vulkan-x64.zip', url: 'u2', size: 2, sha256: 'bb' });
+  assert.strictEqual(ai.pickRuntime(rels, 'cuda', { platform: 'win32' }), null);
+});
+
+test('runtime pick on macOS: the macos-<arch> tar.gz for both variants, nothing for other systems', () => {
+  const rels = [{ tag_name: 'b12675', assets: [
+    { name: 'llama-b12675-bin-win-vulkan-x64.zip', browser_download_url: 'w', size: 1 },
+    { name: 'llama-b12675-bin-macos-arm64.tar.gz', browser_download_url: 'm1', size: 16, digest: 'sha256:cc' },
+    { name: 'llama-b12675-bin-macos-x64.tar.gz', browser_download_url: 'm2', size: 12, digest: 'sha256:dd' },
+    { name: 'llama-b12675-xcframework.zip', browser_download_url: 'x', size: 70 }] }];
+  const mac = { platform: 'darwin', arch: 'arm64' };
+  assert.deepStrictEqual(ai.pickRuntime(rels, 'vulkan', mac), { tag: 'b12675', name: 'llama-b12675-bin-macos-arm64.tar.gz', url: 'm1', size: 16, sha256: 'cc' });
+  assert.strictEqual(ai.pickRuntime(rels, 'cpu', mac).url, 'm1');
+  assert.strictEqual(ai.pickRuntime(rels, 'cpu', { platform: 'darwin', arch: 'x64' }).url, 'm2');
+  assert.strictEqual(ai.pickRuntime(rels, 'cuda', mac), null);
+  assert.strictEqual(ai.pickRuntime(rels, 'vulkan', { platform: 'linux', arch: 'x64' }), null);
+  assert.strictEqual(ai.pickRuntime(rels, 'vulkan', { platform: 'win32', arch: 'x64' }).url, 'w');
 });
 
 test('applyEnv points the engine at the built-in servers only when chosen and the model file exists', () => {

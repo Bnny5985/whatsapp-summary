@@ -73,4 +73,10 @@ jobs:
           ARGS=(--title "WhatsApp Summary ${VERSION}")
           if [ -f "$NOTES" ]; then ARGS+=(--notes-file "$NOTES"); else ARGS+=(--generate-notes); fi
           case "$VERSION" in *-*) ARGS+=(--prerelease --latest=false) ;; esac
-          gh release create "$TAG" dist/WhatsApp-Summary-Setup-${VERSION}.exe dist/WhatsApp-Summary-Setup-${VERSION}.exe.sha256 "${ARGS[@]}"
+          FILES=(dist/WhatsApp-Summary-Setup-${VERSION}.exe dist/WhatsApp-Summary-Setup-${VERSION}.exe.sha256)
+          # Re-running for the same tag (e.g. the tag was moved) replaces the files instead of failing.
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "${FILES[@]}" --clobber
+          else
+            gh release create "$TAG" "${FILES[@]}" "${ARGS[@]}"
+          fi

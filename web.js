@@ -62,7 +62,7 @@ const appSettings = require('./appsettings');
 // Under the desktop app the engine is restarted by exiting with code 3 (the app starts it again with the new settings).
 const SUPERVISED = process.env.BOT_SUPERVISED === '1';
 function restartSoon() { if (SUPERVISED) setTimeout(() => process.exit(3), 800); }
-const SERVER_VERSION = 11; // bump together with UI_VERSION in ui.html
+const SERVER_VERSION = 12; // bump together with UI_VERSION in ui.html
 const MEDIA_TYPES = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.ogg': 'audio/ogg' };
 const LISTEN_FLAGS = ['text', 'voice', 'images', 'links'];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;

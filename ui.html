@@ -757,7 +757,7 @@ function flagChips(c, where) {
     (where === 'side' && !c.is_group ? `<button class="btn btn-ghost btn-sm" data-love-set="${c.rowid}">💛 בן/בת הזוג שלי</button>` : '');
 }
 const openListen = new Set();
-const UI_VERSION = 11; // must match SERVER_VERSION in web.js
+const UI_VERSION = 12; // must match SERVER_VERSION in web.js
 let chatFilter = (() => { try { return localStorage.getItem('chatFilter') || 'all'; } catch { return 'all'; } })();
 function showOldVersion() { $('#versionBanner').classList.remove('hidden'); }
 async function checkVersion() {
